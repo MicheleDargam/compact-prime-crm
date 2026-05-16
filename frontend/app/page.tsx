@@ -1,5 +1,5 @@
 import DashboardCards from "./components/DashboardCards";
-import PipelinePreview from "./components/PipelinePreview";
+import PipelineKanban from "./components/pipeline/PipelineKanban";
 
 export default function Home() {
   return (
@@ -42,7 +42,7 @@ export default function Home() {
 
       {/* Pipeline preview */}
       <section id="pipeline-preview" aria-label="Pipeline comercial">
-        <PipelinePreview />
+        <PipelineKanban />
       </section>
     </div>
   );
