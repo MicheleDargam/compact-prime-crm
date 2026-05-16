@@ -1,26 +1,135 @@
 @import "tailwindcss";
 
+/* ===== Compact Prime — Design Tokens ===== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand */
+  --gold-50: #fdf8e8;
+  --gold-100: #f5e6b8;
+  --gold-200: #e8cc6e;
+  --gold-300: #d4a937;
+  --gold-400: #c9982a;
+  --gold-500: #b8860b;
+  --gold-600: #9a7209;
+  --gold-700: #7a5a07;
+
+  /* Neutrals (dark theme) */
+  --bg-primary: #0b0b0f;
+  --bg-secondary: #111117;
+  --bg-card: #16161e;
+  --bg-card-hover: #1c1c26;
+  --bg-sidebar: #0e0e14;
+  --bg-input: #1a1a24;
+
+  --border-subtle: #232330;
+  --border-default: #2d2d3d;
+
+  --text-primary: #f0efe9;
+  --text-secondary: #9d9caa;
+  --text-muted: #5e5d6d;
+  --text-gold: #d4a937;
+
+  /* Accent */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 8px 25px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 169, 55, 0.08);
+  --shadow-gold-glow: 0 0 20px rgba(212, 169, 55, 0.08);
 }
 
+/* ===== Tailwind v4 Theme Integration ===== */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono);
+
+  /* Expose brand colours */
+  --color-gold-50: var(--gold-50);
+  --color-gold-100: var(--gold-100);
+  --color-gold-200: var(--gold-200);
+  --color-gold-300: var(--gold-300);
+  --color-gold-400: var(--gold-400);
+  --color-gold-500: var(--gold-500);
+  --color-gold-600: var(--gold-600);
+  --color-gold-700: var(--gold-700);
+
+  --color-surface-primary: var(--bg-primary);
+  --color-surface-secondary: var(--bg-secondary);
+  --color-surface-card: var(--bg-card);
+  --color-surface-sidebar: var(--bg-sidebar);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ===== Global Reset & Base ===== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-default) transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
+
+/* ===== Utility animations ===== */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(212, 169, 55, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 16px 4px rgba(212, 169, 55, 0.1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 0%,
+    var(--bg-card-hover) 50%,
+    var(--bg-card) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 3s ease-in-out infinite;
+}
+
+/* Staggered entrance */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
