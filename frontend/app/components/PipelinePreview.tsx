@@ -20,12 +20,6 @@ const columns: PipelineColumn[] = [
       { name: "Maria Silva", event: "Casamento - 150 pax", value: "R$ 22.500" },
       { name: "João Souza", event: "Corporativo - 80 pax", value: "R$ 12.000" },
       { name: "Ana Lima", event: "Aniversário - 60 pax", value: "R$ 8.500" },
-    ],
-  },
-  {
-    title: "Qualificação",
-    color: "var(--info)",
-    leads: [
       { name: "Carlos Mendes", event: "Casamento - 200 pax", value: "R$ 35.000" },
       { name: "Fernanda Costa", event: "Debutante - 120 pax", value: "R$ 18.000" },
     ],

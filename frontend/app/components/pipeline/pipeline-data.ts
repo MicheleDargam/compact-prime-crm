@@ -40,8 +40,7 @@ export const INITIAL_DATA: KanbanState = {
     "lead-10": { id: "lead-10", name: "Diego Rocha", event: "Corporativo · 100 pax", value: "R$ 15.000", valueCents: 1500000 },
   },
   columns: [
-    { id: "col-novo", title: "Novo Lead", color: "var(--gold-400)", leadIds: ["lead-1", "lead-2", "lead-3"] },
-    { id: "col-qualificacao", title: "Qualificação", color: "var(--info)", leadIds: ["lead-4", "lead-5"] },
+    { id: "col-novo", title: "Novo Lead", color: "var(--gold-400)", leadIds: ["lead-1", "lead-2", "lead-3", "lead-4", "lead-5"] },
     { id: "col-proposta", title: "Proposta Enviada", color: "var(--warning)", leadIds: ["lead-6", "lead-7"] },
     { id: "col-negociacao", title: "Negociação", color: "#a78bfa", leadIds: ["lead-8"] },
     { id: "col-fechado", title: "Fechado", color: "var(--success)", leadIds: ["lead-9", "lead-10"] },
