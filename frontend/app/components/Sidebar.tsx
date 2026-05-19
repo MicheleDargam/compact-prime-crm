@@ -47,6 +47,8 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
+  if (pathname === "/login") return null;
+
   return (
     <>
       {/* Mobile toggle */}
