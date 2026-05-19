@@ -23,15 +23,17 @@ export default function LoginPage() {
         {/* Conteúdo Institucional */}
         <div className="relative z-10 flex flex-col items-center text-center max-w-lg mx-auto animate-fade-in-up">
           {/* Logo */}
-          <div className="mb-8 p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-[var(--gold-500)]/20 shadow-[var(--shadow-gold-glow)]">
+          <div className="mb-6 relative group">
+            {/* Glow sutil atrás da logo transparente */}
+            <div className="absolute inset-0 bg-[var(--gold-500)]/10 blur-2xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
             <img 
               src="/logo-compact.png" 
               alt="Compact Prime Logo" 
-              className="w-48 h-auto object-contain drop-shadow-2xl"
+              className="w-64 md:w-72 h-auto object-contain drop-shadow-[0_0_15px_rgba(212,169,55,0.3)] relative z-10"
               onError={(e) => {
                 // Fallback visual caso a imagem não tenha sido salva
                 (e.target as HTMLImageElement).style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML = '<div class="text-[var(--gold-300)] font-bold text-3xl tracking-widest uppercase">CP</div>';
+                e.currentTarget.parentElement!.innerHTML = '<div class="text-[var(--gold-300)] font-bold text-3xl tracking-widest uppercase relative z-10">CP</div>';
               }}
             />
           </div>
@@ -57,15 +59,18 @@ export default function LoginPage() {
         
         {/* Versão Mobile da Logo */}
         <div className="lg:hidden flex flex-col items-center mb-8 animate-fade-in-up">
-          <img 
-            src="/logo-compact.png" 
-            alt="Compact Prime Logo" 
-            className="w-32 h-auto object-contain mb-4"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-              e.currentTarget.parentElement!.innerHTML = '<div class="w-16 h-16 rounded-xl bg-gradient-to-br from-[var(--gold-300)] to-[var(--gold-600)] flex items-center justify-center text-black font-bold text-xl mb-4">CP</div>';
-            }}
-          />
+          <div className="relative">
+            <div className="absolute inset-0 bg-[var(--gold-500)]/10 blur-xl rounded-full opacity-50 pointer-events-none" />
+            <img 
+              src="/logo-compact.png" 
+              alt="Compact Prime Logo" 
+              className="w-48 sm:w-56 h-auto object-contain mb-4 drop-shadow-[0_0_15px_rgba(212,169,55,0.3)] relative z-10"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+                e.currentTarget.parentElement!.innerHTML = '<div class="w-16 h-16 rounded-xl bg-gradient-to-br from-[var(--gold-300)] to-[var(--gold-600)] flex items-center justify-center text-black font-bold text-xl mb-4 relative z-10">CP</div>';
+              }}
+            />
+          </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
             Compact Prime <span className="text-[var(--gold-300)]">CRM</span>
           </h1>
