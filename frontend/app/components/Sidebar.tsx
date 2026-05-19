@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-type NavItem = { label: string; icon: string; active?: boolean };
+type NavItem = { label: string; icon: string; href: string };
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", icon: "dashboard", active: true },
-  { label: "CRM / Leads", icon: "leads" },
-  { label: "Agenda", icon: "agenda" },
-  { label: "Propostas", icon: "propostas" },
-  { label: "Financeiro", icon: "financeiro" },
-  { label: "Configurações", icon: "config" },
+  { label: "Dashboard", icon: "dashboard", href: "/" },
+  { label: "Kanban", icon: "leads", href: "/kanban" },
+  { label: "Agenda", icon: "agenda", href: "/agenda" },
+  { label: "Propostas", icon: "propostas", href: "/propostas" },
+  { label: "Financeiro", icon: "financeiro", href: "/financeiro" },
+  { label: "Configurações", icon: "config", href: "#" },
 ];
 
 /* Minimal SVG icon set */
@@ -40,6 +42,7 @@ function Icon({ name, className = "w-5 h-5" }: { name: string; className?: strin
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <>
@@ -83,20 +86,25 @@ export default function Sidebar() {
 
           {/* Nav */}
           <nav className="flex-1 px-3 py-4 space-y-1">
-            {navItems.map((item) => (
-              <button
-                key={item.label}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group ${
-                  item.active ? "text-[var(--gold-300)] bg-[var(--gold-500)]/10" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/[0.03]"
-                }`}
-              >
-                <span className={`transition-colors duration-200 ${item.active ? "text-[var(--gold-400)]" : "text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]"}`}>
-                  <Icon name={item.icon} />
-                </span>
-                {item.label}
-                {item.active && <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold-400)" }} />}
-              </button>
-            ))}
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  href={item.href}
+                  key={item.label}
+                  onClick={() => setMobileOpen(false)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group ${
+                    isActive ? "text-[var(--gold-300)] bg-[var(--gold-500)]/10" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/[0.03]"
+                  }`}
+                >
+                  <span className={`transition-colors duration-200 ${isActive ? "text-[var(--gold-400)]" : "text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]"}`}>
+                    <Icon name={item.icon} />
+                  </span>
+                  {item.label}
+                  {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold-400)" }} />}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Bottom user */}
