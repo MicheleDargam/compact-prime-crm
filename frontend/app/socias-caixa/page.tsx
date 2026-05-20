@@ -1,26 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  PiggyBank, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  Download, 
-  Coins, 
-  Percent, 
+import { useState } from "react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Coins,
+  PiggyBank,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Download,
   Target,
   FileText,
-  UserCheck,
-  ChevronRight,
-  ArrowUpRight,
   PieChart,
-  HelpCircle,
   Sparkles,
-  Info
+  Info,
+  X,
+  FileDown,
+  ShieldCheck,
+  Printer,
 } from "lucide-react";
 
 // Types
@@ -44,17 +42,16 @@ interface MonthlyData {
   reserveValue: number;
   partners: PartnerPayout[];
   categories: { name: string; value: number; color: string }[];
-  reserveGoal: { current: number; target: number; objective: string; notes: string };
+  reserveGoal: { current: number; target: number; objective: string };
 }
 
-// Mock Data for different months
 const mockMonthlyData: Record<string, MonthlyData> = {
   "Maio 2026": {
     month: "Maio 2026",
     revenue: 80000,
     expenses: 42000,
     netProfit: 38000,
-    reserveValue: 8000, // R$ 38.000 lucro - R$ 30.000 distribuído (10k cada) = R$ 8.000 reserva
+    reserveValue: 8000,
     partners: [
       { id: "s1", name: "Clara Silva", avatar: "CS", sharePercent: 33.3, expectedValue: 10000, withdrawnValue: 10000, status: "Pago" },
       { id: "s2", name: "Beatriz Santos", avatar: "BS", sharePercent: 33.3, expectedValue: 10000, withdrawnValue: 5000, status: "Parcial" },
@@ -63,16 +60,14 @@ const mockMonthlyData: Record<string, MonthlyData> = {
     categories: [
       { name: "Fornecedores", value: 15000, color: "var(--gold-300)" },
       { name: "Funcionários", value: 12000, color: "var(--gold-400)" },
-      { name: "Insumos", value: 6000, color: "var(--gold-500)" },
-      { name: "Decoração", value: 4000, color: "var(--gold-600)" },
-      { name: "Fotografia", value: 3000, color: "#d97706" },
-      { name: "Operacional", value: 2000, color: "#b45309" },
+      { name: "Insumos", value: 7000, color: "var(--gold-500)" },
+      { name: "Operacional", value: 5000, color: "#d97706" },
+      { name: "Equipamentos", value: 3000, color: "#b45309" },
     ],
     reserveGoal: {
       current: 34500,
       target: 50000,
       objective: "Fundo de Expansão e Capital de Giro",
-      notes: "Destinado à aquisição de novos equipamentos de som e iluminação para eventos de grande porte no segundo semestre, além de manter o capital de giro operacional."
     }
   },
   "Abril 2026": {
@@ -80,7 +75,7 @@ const mockMonthlyData: Record<string, MonthlyData> = {
     revenue: 90000,
     expenses: 48000,
     netProfit: 42000,
-    reserveValue: 12000, // R$ 42.000 lucro - R$ 30.000 distribuído (10k cada) = R$ 12.000 reserva
+    reserveValue: 12000,
     partners: [
       { id: "s1", name: "Clara Silva", avatar: "CS", sharePercent: 33.3, expectedValue: 10000, withdrawnValue: 10000, status: "Pago" },
       { id: "s2", name: "Beatriz Santos", avatar: "BS", sharePercent: 33.3, expectedValue: 10000, withdrawnValue: 10000, status: "Pago" },
@@ -89,16 +84,14 @@ const mockMonthlyData: Record<string, MonthlyData> = {
     categories: [
       { name: "Fornecedores", value: 18000, color: "var(--gold-300)" },
       { name: "Funcionários", value: 13500, color: "var(--gold-400)" },
-      { name: "Insumos", value: 7000, color: "var(--gold-500)" },
-      { name: "Decoração", value: 4500, color: "var(--gold-600)" },
-      { name: "Fotografia", value: 3000, color: "#d97706" },
-      { name: "Operacional", value: 2000, color: "#b45309" },
+      { name: "Insumos", value: 8000, color: "var(--gold-500)" },
+      { name: "Operacional", value: 5000, color: "#d97706" },
+      { name: "Equipamentos", value: 3500, color: "#b45309" },
     ],
     reserveGoal: {
       current: 26500,
       target: 50000,
       objective: "Reserva Operacional e Contingência",
-      notes: "Reserva prioritária para cobrir custos fixos da empresa durante a baixa temporada de eventos no início de inverno."
     }
   },
   "Março 2026": {
@@ -106,7 +99,7 @@ const mockMonthlyData: Record<string, MonthlyData> = {
     revenue: 75000,
     expenses: 39000,
     netProfit: 36000,
-    reserveValue: 9000, // R$ 36.000 lucro - R$ 27.000 distribuído (9k cada) = R$ 9.000 reserva
+    reserveValue: 9000,
     partners: [
       { id: "s1", name: "Clara Silva", avatar: "CS", sharePercent: 33.3, expectedValue: 9000, withdrawnValue: 9000, status: "Pago" },
       { id: "s2", name: "Beatriz Santos", avatar: "BS", sharePercent: 33.3, expectedValue: 9000, withdrawnValue: 9000, status: "Pago" },
@@ -115,16 +108,14 @@ const mockMonthlyData: Record<string, MonthlyData> = {
     categories: [
       { name: "Fornecedores", value: 14000, color: "var(--gold-300)" },
       { name: "Funcionários", value: 12000, color: "var(--gold-400)" },
-      { name: "Insumos", value: 5500, color: "var(--gold-500)" },
-      { name: "Decoração", value: 3500, color: "var(--gold-600)" },
-      { name: "Fotografia", value: 2500, color: "#d97706" },
-      { name: "Operacional", value: 1500, color: "#b45309" },
+      { name: "Insumos", value: 7000, color: "var(--gold-500)" },
+      { name: "Operacional", value: 4000, color: "#d97706" },
+      { name: "Equipamentos", value: 2000, color: "#b45309" },
     ],
     reserveGoal: {
       current: 17500,
       target: 50000,
       objective: "Aquisição de Mobiliário Premium",
-      notes: "Poupando para compra de novas mesas espelhadas e cadeiras medalhão sob medida para casamentos."
     }
   }
 };
@@ -150,101 +141,126 @@ const statusStyles: Record<PayoutStatus, { text: string; bg: string; border: str
   }
 };
 
-export default function SociasCaixaPage() {
+export default function DistribuicaoBuffetPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>("Maio 2026");
   const [activeData, setActiveData] = useState<MonthlyData>(mockMonthlyData["Maio 2026"]);
-  
-  // Interactive Modal/Simulation State
+
+  // Withdrawal modal
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<PartnerPayout | null>(null);
   const [withdrawAmount, setWithdrawAmount] = useState<string>("");
-  const [simulationLogs, setSimulationLogs] = useState<string[]>([
-    "Painel carregado com dados do CRM Compact Prime.",
-    "Lógica híbrida de fechamento operacional ativada."
+
+  // Receipt modal
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [receiptPartner, setReceiptPartner] = useState<PartnerPayout | null>(null);
+
+  // PDF modal
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
+
+  // Toast feedback
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
+
+  const showToastFeedback = (msg: string) => {
+    setToastMessage(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3200);
+  };
+
+  // Movement log
+  const [movementLogs, setMovementLogs] = useState<string[]>([
+    "[RET] Retirada registrada — Clara Silva — R$ 10.000,00",
+    "[DOC] Comprovante gerado — Beatriz Santos",
+    "[CAI] Reserva atualizada — +R$ 8.000,00",
+    "[REL] Relatório mensal exportado — Abril 2026",
+    "[CAI] Meta da reserva definida — R$ 50.000,00",
+    "[SIS] Painel carregado — Buffet Compact Prime.",
   ]);
 
-  // Handle month selection change
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const month = e.target.value;
     setSelectedMonth(month);
     setActiveData(mockMonthlyData[month]);
-    setSimulationLogs(prev => [
-      `Alterado visualização para o mês de ${month}.`,
-      ...prev
-    ]);
+    setMovementLogs(prev => [`Visualização alterada para ${month}.`, ...prev]);
   };
 
-  // Open withdrawal dialog
   const openWithdrawal = (partner: PartnerPayout) => {
     setSelectedPartner(partner);
     setWithdrawAmount((partner.expectedValue - partner.withdrawnValue).toString());
     setShowPayoutModal(true);
   };
 
-  // Confirm mock withdrawal
+  const openReceipt = (partner: PartnerPayout) => {
+    setReceiptPartner(partner);
+    setShowReceiptModal(true);
+    setMovementLogs(prev => [`[DOC] Comprovante visualizado — ${partner.name}.`, ...prev]);
+  };
+
+  const handleReceiptPrint = (partner: PartnerPayout) => {
+    showToastFeedback("Comprovante preparado para impressão.");
+    setMovementLogs(prev => [`[IMP] Impressão solicitada — ${partner.name}.`, ...prev]);
+  };
+
+  const handleReceiptPdf = (partner: PartnerPayout) => {
+    showToastFeedback("PDF do comprovante gerado visualmente.");
+    setMovementLogs(prev => [`[PDF] Comprovante PDF gerado — ${partner.name} — ${formatCurrency(partner.withdrawnValue)}.`, ...prev]);
+  };
+
   const confirmWithdrawal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPartner) return;
-
     const amountNum = parseFloat(withdrawAmount);
     if (isNaN(amountNum) || amountNum <= 0) return;
 
-    const newWithdrawn = selectedPartner.withdrawnValue + amountNum;
-    let newStatus: PayoutStatus = "Pago";
-    if (newWithdrawn < selectedPartner.expectedValue) {
-      newStatus = "Parcial";
-    } else if (newWithdrawn === 0) {
-      newStatus = "Pendente";
-    }
+    const newWithdrawn = Math.min(selectedPartner.withdrawnValue + amountNum, selectedPartner.expectedValue);
+    const newStatus: PayoutStatus = newWithdrawn >= selectedPartner.expectedValue ? "Pago" : "Parcial";
 
-    // Update active state in-memory (simulated)
-    const updatedPartners = activeData.partners.map(p => {
-      if (p.id === selectedPartner.id) {
-        return {
-          ...p,
-          withdrawnValue: Math.min(newWithdrawn, p.expectedValue),
-          status: newStatus
-        };
-      }
-      return p;
-    });
-
-    setActiveData({
-      ...activeData,
-      partners: updatedPartners
-    });
-
-    // Add log
-    setSimulationLogs(prev => [
-      `Simulação: Retirada de R$ ${amountNum.toLocaleString("pt-BR")} registrada para ${selectedPartner.name}. Status: ${newStatus}.`,
+    setActiveData(prev => ({
+      ...prev,
+      partners: prev.partners.map(p =>
+        p.id === selectedPartner.id ? { ...p, withdrawnValue: newWithdrawn, status: newStatus } : p
+      )
+    }));
+    setMovementLogs(prev => [
+      `Retirada de ${formatCurrency(amountNum)} registrada para ${selectedPartner.name}. Status: ${newStatus}.`,
       ...prev
     ]);
-
     setShowPayoutModal(false);
     setSelectedPartner(null);
   };
 
-  // Format currency helper
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+  const handleExportPdf = () => {
+    setShowPdfModal(true);
+    setMovementLogs(prev => [`Relatório PDF do mês ${selectedMonth} gerado.`, ...prev]);
   };
+
+  const handlePdfDownload = () => {
+    setPdfDownloading(true);
+    setTimeout(() => {
+      setPdfDownloading(false);
+      setShowPdfModal(false);
+    }, 1500);
+  };
+
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-primary)] p-4 md:p-8 animate-fade-in-up overflow-y-auto">
-      {/* Header section with month selectors */}
+
+      {/* Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-[var(--gold-300)] tracking-widest uppercase">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Módulo de Distribuição</span>
+            <span>Módulo de Distribuição — Buffet</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mt-1">Sócias & Caixa</h1>
-          <p className="text-sm md:text-base text-[var(--text-secondary)] mt-0.5">Distribuição mensal e reserva da empresa</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mt-1">Distribuição Buffet</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)] mt-0.5">Distribuição mensal de lucro e reserva do Buffet Compact Prime</p>
         </div>
 
-        {/* Action Controls */}
         <div className="flex items-center gap-3 self-start md:self-auto">
-          {/* Custom Select Box */}
           <div className="relative">
             <select
               value={selectedMonth}
@@ -255,13 +271,13 @@ export default function SociasCaixaPage() {
               <option value="Abril 2026">Abril 2026</option>
               <option value="Março 2026">Março 2026</option>
             </select>
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[var(--text-muted)]">
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
               <Coins className="w-4 h-4 text-[var(--gold-300)]" />
             </div>
           </div>
 
-          <button 
-            onClick={() => setSimulationLogs(prev => ["Relatório gerado (Visual Simulado)", ...prev])}
+          <button
+            onClick={handleExportPdf}
             className="flex items-center gap-2 px-4 py-2.5 text-xs md:text-sm font-medium bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-default)] hover:border-[var(--gold-500)]/30 rounded-xl transition-all cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)] shadow-card"
           >
             <Download className="w-4 h-4 text-[var(--gold-300)]" />
@@ -270,18 +286,17 @@ export default function SociasCaixaPage() {
         </div>
       </header>
 
-      {/* Info Warning banner indicating hybrid and secondary nature */}
+      {/* Info banner */}
       <div className="bg-gradient-to-r from-[var(--gold-500)]/5 to-[var(--gold-300)]/5 border border-[var(--gold-500)]/20 p-4 rounded-xl mb-8 flex gap-3.5 items-start">
         <Info className="w-5 h-5 text-[var(--gold-300)] shrink-0 mt-0.5" />
         <div className="text-xs md:text-sm text-[var(--text-secondary)]">
-          <strong className="text-[var(--gold-300)] font-medium">Nota Financeira:</strong> Este painel atua como ferramenta auxiliar para acompanhamento da reserva em caixa e repasses mensais combinados. Os pagamentos são controlados manualmente pelas sócias e os dados aqui demonstrados são organizados e registrados de forma informativa, complementando a contabilidade oficial.
+          <strong className="text-[var(--gold-300)] font-medium">Nota Financeira:</strong> Este painel registra exclusivamente os dados do serviço de <strong className="text-[var(--text-primary)]">Buffet</strong>. Os pagamentos são controlados manualmente pelas sócias e os valores demonstrados são organizados de forma informativa, complementando a contabilidade oficial.
         </div>
       </div>
 
-      {/* Summary metric cards */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {/* Card 1 */}
-        <div className="bg-[var(--bg-card)] p-5 rounded-xl border border-[var(--border-default)] shadow-card flex items-center gap-4 transition-all hover:bg-[var(--bg-card-hover)] hover:shadow-card-hover group relative overflow-hidden">
+        <div className="bg-[var(--bg-card)] p-5 rounded-xl border border-[var(--border-default)] shadow-card flex items-center gap-4 hover:bg-[var(--bg-card-hover)] hover:shadow-card-hover group relative overflow-hidden transition-all">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-[var(--gold-300)]/20 to-[var(--gold-500)]/40 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="p-3 bg-[var(--gold-500)]/10 rounded-lg text-[var(--gold-300)] group-hover:scale-105 transition-transform">
             <TrendingUp className="w-6 h-6" />
@@ -292,8 +307,7 @@ export default function SociasCaixaPage() {
           </div>
         </div>
 
-        {/* Card 2 */}
-        <div className="bg-[var(--bg-card)] p-5 rounded-xl border border-[var(--border-default)] shadow-card flex items-center gap-4 transition-all hover:bg-[var(--bg-card-hover)] hover:shadow-card-hover group relative overflow-hidden">
+        <div className="bg-[var(--bg-card)] p-5 rounded-xl border border-[var(--border-default)] shadow-card flex items-center gap-4 hover:bg-[var(--bg-card-hover)] hover:shadow-card-hover group relative overflow-hidden transition-all">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="p-3 bg-red-500/10 rounded-lg text-red-400 group-hover:scale-105 transition-transform">
             <TrendingDown className="w-6 h-6" />
@@ -304,8 +318,7 @@ export default function SociasCaixaPage() {
           </div>
         </div>
 
-        {/* Card 3 */}
-        <div className="bg-[var(--bg-card)] p-5 rounded-xl border border-[var(--border-default)] shadow-card flex items-center gap-4 transition-all hover:bg-[var(--bg-card-hover)] hover:shadow-card-hover group relative overflow-hidden">
+        <div className="bg-[var(--bg-card)] p-5 rounded-xl border border-[var(--border-default)] shadow-card flex items-center gap-4 hover:bg-[var(--bg-card-hover)] hover:shadow-card-hover group relative overflow-hidden transition-all">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-400 group-hover:scale-105 transition-transform">
             <Coins className="w-6 h-6" />
@@ -316,10 +329,9 @@ export default function SociasCaixaPage() {
           </div>
         </div>
 
-        {/* Card 4 */}
-        <div className="bg-[var(--bg-card)] p-5 rounded-xl border border-[var(--border-default)] shadow-card flex items-center gap-4 transition-all hover:bg-[var(--bg-card-hover)] hover:shadow-card-hover group relative overflow-hidden">
+        <div className="bg-[var(--bg-card)] p-5 rounded-xl border border-[var(--border-default)] shadow-card flex items-center gap-4 hover:bg-[var(--bg-card-hover)] hover:shadow-card-hover group relative overflow-hidden transition-all">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-[var(--gold-300)] opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="p-3 bg-[var(--gold-300)]/10 rounded-lg text-[var(--gold-300)] group-hover:scale-105 transition-transform animate-pulse-gold">
+          <div className="p-3 bg-[var(--gold-300)]/10 rounded-lg text-[var(--gold-300)] group-hover:scale-105 transition-transform">
             <PiggyBank className="w-6 h-6" />
           </div>
           <div>
@@ -329,7 +341,7 @@ export default function SociasCaixaPage() {
         </div>
       </div>
 
-      {/* Main Sections: Payout details */}
+      {/* Partners Distribution */}
       <section className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -343,19 +355,16 @@ export default function SociasCaixaPage() {
           </span>
         </div>
 
-        {/* 3 Partners Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {activeData.partners.map((partner) => {
-            const progress = (partner.withdrawnValue / partner.expectedValue) * 100;
+            const progress = partner.expectedValue > 0 ? (partner.withdrawnValue / partner.expectedValue) * 100 : 0;
             const statusConfig = statusStyles[partner.status];
-            
             return (
-              <div 
-                key={partner.id} 
+              <div
+                key={partner.id}
                 className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] p-5 hover:border-[var(--gold-500)]/20 transition-all flex flex-col justify-between"
                 style={{ boxShadow: "var(--shadow-card)" }}
               >
-                {/* Header card: Avatar + Info */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -367,14 +376,11 @@ export default function SociasCaixaPage() {
                         <p className="text-xs text-[var(--text-muted)]">Cota de {partner.sharePercent}%</p>
                       </div>
                     </div>
-
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}>
-                      {statusConfig.icon}
-                      {partner.status}
+                      {statusConfig.icon}{partner.status}
                     </span>
                   </div>
 
-                  {/* Values details */}
                   <div className="space-y-2 mb-6">
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[var(--text-secondary)]">Valor Previsto</span>
@@ -384,19 +390,14 @@ export default function SociasCaixaPage() {
                       <span className="text-[var(--text-secondary)]">Valor Retirado</span>
                       <span className="font-semibold text-[var(--text-primary)]">{formatCurrency(partner.withdrawnValue)}</span>
                     </div>
-
-                    {/* Progress bar */}
                     <div className="pt-2">
                       <div className="flex justify-between items-center text-[10px] text-[var(--text-muted)] mb-1">
                         <span>Progresso da retirada</span>
                         <span>{progress.toFixed(0)}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-[var(--bg-primary)] rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-500 rounded-full ${
-                            partner.status === "Pago" ? "bg-emerald-500" :
-                            partner.status === "Parcial" ? "bg-amber-500" : "bg-red-500"
-                          }`}
+                        <div
+                          className={`h-full transition-all duration-500 rounded-full ${partner.status === "Pago" ? "bg-emerald-500" : partner.status === "Parcial" ? "bg-amber-500" : "bg-red-500"}`}
                           style={{ width: `${progress}%` }}
                         />
                       </div>
@@ -404,23 +405,18 @@ export default function SociasCaixaPage() {
                   </div>
                 </div>
 
-                {/* Simulated action buttons */}
                 <div className="flex gap-2 border-t border-[var(--border-subtle)] pt-4 mt-2">
-                  <button 
+                  <button
                     disabled={partner.status === "Pago"}
                     onClick={() => openWithdrawal(partner)}
-                    className={`flex-1 text-center py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                      partner.status === "Pago" 
-                        ? "bg-transparent text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-not-allowed" 
-                        : "bg-[var(--gold-500)]/10 hover:bg-[var(--gold-500)]/20 text-[var(--gold-400)] border border-[var(--gold-500)]/20 hover:border-[var(--gold-400)]/40 cursor-pointer"
-                    }`}
+                    className={`flex-1 text-center py-2 px-3 rounded-lg text-xs font-medium transition-all ${partner.status === "Pago" ? "bg-transparent text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-not-allowed" : "bg-[var(--gold-500)]/10 hover:bg-[var(--gold-500)]/20 text-[var(--gold-400)] border border-[var(--gold-500)]/20 hover:border-[var(--gold-400)]/40 cursor-pointer"}`}
                   >
                     Registrar Retirada
                   </button>
-                  <button 
-                    onClick={() => setSimulationLogs(prev => [`Simulação: Recibo visual da sócia ${partner.name} visualizado.`, ...prev])}
+                  <button
+                    onClick={() => openReceipt(partner)}
                     className="py-2 px-2.5 rounded-lg border border-[var(--border-default)] hover:border-[var(--gold-500)]/30 bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
-                    title="Ver Recibo"
+                    title="Comprovante da retirada"
                   >
                     <FileText className="w-3.5 h-3.5" />
                   </button>
@@ -431,106 +427,72 @@ export default function SociasCaixaPage() {
         </div>
       </section>
 
-      {/* Grid: Company cash details + Expenses Category breakdown */}
+      {/* Bottom Grid: Reserve + Categories */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
-        {/* Left Column: Company cash reserve details */}
+
+        {/* Left: Company Reserve */}
         <div className="flex flex-col gap-4">
           <h2 className="text-lg font-bold text-[var(--text-primary)]">Caixa da Empresa (Reserva)</h2>
-          
-          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] p-6 flex flex-col justify-between h-full shadow-card">
-            <div>
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[var(--gold-500)]/10 flex items-center justify-center text-[var(--gold-300)]">
-                    <Target className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm text-[var(--text-primary)]">Objetivo da Reserva</h3>
-                    <p className="text-xs text-[var(--gold-300)] font-medium">{activeData.reserveGoal.objective}</p>
-                  </div>
+
+          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] p-6 shadow-card">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[var(--gold-500)]/10 flex items-center justify-center text-[var(--gold-300)]">
+                  <Target className="w-4 h-4" />
                 </div>
-                
-                {/* Meta details badge */}
-                <div className="text-right">
-                  <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Meta Planejada</p>
-                  <p className="text-xs font-bold text-[var(--text-primary)]">{formatCurrency(activeData.reserveGoal.target)}</p>
+                <div>
+                  <h3 className="font-semibold text-sm text-[var(--text-primary)]">Objetivo da Reserva</h3>
+                  <p className="text-xs text-[var(--gold-300)] font-medium">{activeData.reserveGoal.objective}</p>
                 </div>
               </div>
-
-              {/* Progress to target */}
-              <div className="mb-6 bg-[var(--bg-primary)] border border-[var(--border-subtle)] p-4 rounded-xl">
-                <div className="flex justify-between items-center text-xs mb-2">
-                  <span className="text-[var(--text-secondary)]">Progresso da Reserva</span>
-                  <span className="font-bold text-[var(--gold-300)]">
-                    {((activeData.reserveGoal.current / activeData.reserveGoal.target) * 100).toFixed(1)}% atingido
-                  </span>
-                </div>
-                
-                {/* Custom dual meter bar */}
-                <div className="relative w-full h-3 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-                  {/* Current progress */}
-                  <div 
-                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-[var(--gold-500)] to-[var(--gold-200)] rounded-full"
-                    style={{ width: `${(activeData.reserveGoal.current / activeData.reserveGoal.target) * 100}%` }}
-                  />
-                  {/* Simulating this month's addition */}
-                  <div 
-                    className="absolute top-0 h-full bg-emerald-500/50"
-                    style={{ 
-                      left: `${(activeData.reserveGoal.current / activeData.reserveGoal.target) * 100}%`,
-                      width: `${(activeData.reserveValue / activeData.reserveGoal.target) * 100}%` 
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between items-center text-[10px] text-[var(--text-muted)] mt-2">
-                  <span>Atual: {formatCurrency(activeData.reserveGoal.current)}</span>
-                  <span className="text-emerald-400 font-medium">+ {formatCurrency(activeData.reserveValue)} este mês</span>
-                </div>
-              </div>
-
-              {/* Remarks/Observations */}
-              <div className="mb-4">
-                <h4 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Observações</h4>
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed italic bg-[var(--bg-primary)] p-3 rounded-lg border border-[var(--border-subtle)]">
-                  "{activeData.reserveGoal.notes}"
-                </p>
+              <div className="text-right">
+                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Meta Planejada</p>
+                <p className="text-xs font-bold text-[var(--text-primary)]">{formatCurrency(activeData.reserveGoal.target)}</p>
               </div>
             </div>
 
-            {/* Quick Actions (Visual mock) */}
-            <div className="border-t border-[var(--border-subtle)] pt-4 mt-2 flex gap-3">
-              <button 
-                onClick={() => setSimulationLogs(prev => ["Simulação: Histórico de investimentos da reserva visualizado.", ...prev])}
-                className="flex-1 py-2 text-center text-xs font-medium border border-[var(--border-default)] hover:border-[var(--gold-500)]/30 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
-              >
-                Histórico do Caixa
-              </button>
-              <button 
-                onClick={() => setSimulationLogs(prev => ["Simulação: Modal de ajuste de objetivo visualizado.", ...prev])}
-                className="flex-1 py-2 text-center text-xs font-medium bg-[var(--gold-500)]/10 hover:bg-[var(--gold-500)]/20 border border-[var(--gold-500)]/20 text-[var(--gold-400)] rounded-lg transition-all cursor-pointer"
-              >
-                Ajustar Objetivo
-              </button>
+            <div className="bg-[var(--bg-primary)] border border-[var(--border-subtle)] p-4 rounded-xl">
+              <div className="flex justify-between items-center text-xs mb-2">
+                <span className="text-[var(--text-secondary)]">Progresso da Reserva</span>
+                <span className="font-bold text-[var(--gold-300)]">
+                  {((activeData.reserveGoal.current / activeData.reserveGoal.target) * 100).toFixed(1)}% atingido
+                </span>
+              </div>
+              <div className="relative w-full h-3 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                <div
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-[var(--gold-500)] to-[var(--gold-200)] rounded-full"
+                  style={{ width: `${(activeData.reserveGoal.current / activeData.reserveGoal.target) * 100}%` }}
+                />
+                <div
+                  className="absolute top-0 h-full bg-emerald-500/50"
+                  style={{
+                    left: `${(activeData.reserveGoal.current / activeData.reserveGoal.target) * 100}%`,
+                    width: `${(activeData.reserveValue / activeData.reserveGoal.target) * 100}%`
+                  }}
+                />
+              </div>
+              <div className="flex justify-between items-center text-[10px] text-[var(--text-muted)] mt-2">
+                <span>Valor atual: {formatCurrency(activeData.reserveGoal.current)}</span>
+                <span className="text-emerald-400 font-medium">+ {formatCurrency(activeData.reserveValue)} este mês</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Expenses breakdown */}
+        {/* Right: Expense Categories */}
         <div className="flex flex-col gap-4">
-          <h2 className="text-lg font-bold text-[var(--text-primary)]">Gastos por Categoria</h2>
-          
+          <h2 className="text-lg font-bold text-[var(--text-primary)]">Gastos por Categoria — Buffet</h2>
+
           <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] p-6 shadow-card flex flex-col justify-between h-full">
             <div>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-xs text-[var(--text-secondary)] font-medium">Breakdown das despesas do mês selecionado</p>
+                <p className="text-xs text-[var(--text-secondary)] font-medium">Despesas do mês selecionado</p>
                 <div className="flex items-center gap-1.5 text-xs text-[var(--gold-300)] font-semibold">
                   <PieChart className="w-3.5 h-3.5" />
                   <span>Total: {formatCurrency(activeData.expenses)}</span>
                 </div>
               </div>
 
-              {/* Progress graph list of categories */}
               <div className="space-y-4">
                 {activeData.categories.map((cat, idx) => {
                   const percentage = (cat.value / activeData.expenses) * 100;
@@ -538,7 +500,7 @@ export default function SociasCaixaPage() {
                     <div key={idx} className="space-y-1">
                       <div className="flex justify-between items-center text-xs">
                         <span className="font-medium text-[var(--text-primary)] flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                           {cat.name}
                         </span>
                         <div className="text-right">
@@ -546,15 +508,10 @@ export default function SociasCaixaPage() {
                           <span className="text-[var(--text-muted)] text-[10px]">{percentage.toFixed(1)}%</span>
                         </div>
                       </div>
-                      
-                      {/* Bar indicator */}
                       <div className="w-full h-2 bg-[var(--bg-primary)] rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full rounded-full transition-all duration-700"
-                          style={{ 
-                            width: `${percentage}%`,
-                            backgroundColor: cat.color
-                          }}
+                          style={{ width: `${percentage}%`, backgroundColor: cat.color }}
                         />
                       </div>
                     </div>
@@ -563,46 +520,53 @@ export default function SociasCaixaPage() {
               </div>
             </div>
 
-            {/* Simulated report log preview to look active & live */}
+            {/* Movement log */}
             <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
-              <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-wider font-semibold">
-                <span>Histórico de Simulações do Painel</span>
-                <span className="text-[var(--gold-300)] animate-pulse">● online</span>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold">Histórico de Movimentações do Buffet</span>
+                <span className="text-[var(--gold-300)] text-[10px] animate-pulse">● online</span>
               </div>
-              <div className="bg-[var(--bg-primary)] p-3 rounded-lg border border-[var(--border-subtle)] text-[10px] font-mono h-24 overflow-y-auto space-y-1 scrollbar-thin text-[var(--text-secondary)]">
-                {simulationLogs.map((log, i) => (
-                  <div key={i} className="flex gap-1.5 items-start">
-                    <span className="text-[var(--gold-400)] shrink-0">&gt;</span>
-                    <span>{log}</span>
-                  </div>
-                ))}
+              <p className="text-[10px] text-[var(--text-muted)] mb-2 italic">Registro das principais movimentações internas do Buffet.</p>
+              <div className="bg-[var(--bg-primary)] p-3 rounded-lg border border-[var(--border-subtle)] text-[10px] font-mono h-28 overflow-y-auto space-y-1.5 text-[var(--text-secondary)]">
+                {movementLogs.map((log, i) => {
+                  const tag = log.match(/^\[(\w+)\]/)?.[1] ?? "";
+                  const tagColor: Record<string, string> = {
+                    RET: "text-amber-400",
+                    DOC: "text-blue-400",
+                    CAI: "text-emerald-400",
+                    REL: "text-violet-400",
+                    IMP: "text-sky-400",
+                    PDF: "text-orange-400",
+                    SIS: "text-[var(--text-muted)]",
+                  };
+                  return (
+                    <div key={i} className="flex gap-1.5 items-start">
+                      <span className={`shrink-0 font-bold ${tagColor[tag] ?? "text-[var(--gold-400)]"}`}>&gt;</span>
+                      <span>{log}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* MOCKUP INTERACTIVE MODAL (REGISTER WITHDRAWAL) */}
+      {/* ======================================================== */}
+      {/* MODAL: REGISTRAR RETIRADA */}
       {showPayoutModal && selectedPartner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl w-full max-w-md overflow-hidden shadow-2xl animate-fade-in-up">
-            
-            {/* Modal Header */}
             <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-secondary)]">
               <div className="flex items-center gap-2">
                 <Coins className="w-5 h-5 text-[var(--gold-300)]" />
                 <h3 className="font-bold text-[var(--text-primary)]">Registrar Retirada</h3>
               </div>
-              <button 
-                onClick={() => setShowPayoutModal(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer text-lg font-bold"
-              >
-                ✕
+              <button onClick={() => setShowPayoutModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Form */}
             <form onSubmit={confirmWithdrawal} className="p-6 space-y-4">
               <div className="bg-[var(--bg-primary)] p-3.5 rounded-lg border border-[var(--border-subtle)]">
                 <p className="text-xs text-[var(--text-muted)]">Sócia Beneficiária</p>
@@ -624,9 +588,7 @@ export default function SociasCaixaPage() {
                   Valor da Retirada (R$)
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-xs text-[var(--text-muted)] font-mono">
-                    R$
-                  </div>
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-xs text-[var(--text-muted)] font-mono">R$</div>
                   <input
                     type="number"
                     required
@@ -640,11 +602,10 @@ export default function SociasCaixaPage() {
                   />
                 </div>
                 <p className="text-[10px] text-[var(--text-muted)] mt-1.5">
-                  Máximo disponível para retirada: {formatCurrency(selectedPartner.expectedValue - selectedPartner.withdrawnValue)}
+                  Máximo disponível: {formatCurrency(selectedPartner.expectedValue - selectedPartner.withdrawnValue)}
                 </p>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-3 pt-3 border-t border-[var(--border-subtle)]">
                 <button
                   type="button"
@@ -661,6 +622,218 @@ export default function SociasCaixaPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL: COMPROVANTE DA RETIRADA */}
+      {showReceiptModal && receiptPartner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up">
+            <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-secondary)]">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[var(--gold-300)]" />
+                <h3 className="font-bold text-[var(--text-primary)] text-sm">Comprovante da Retirada</h3>
+              </div>
+              <button onClick={() => setShowReceiptModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {/* Paper-style receipt */}
+              <div className="bg-white text-neutral-900 rounded-lg border border-neutral-200 p-5 shadow-inner" style={{ fontFamily: "sans-serif" }}>
+                <div className="text-center border-b border-neutral-200 pb-3 mb-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Compact Prime — Buffet</p>
+                  <p className="text-[9px] text-neutral-400 mt-0.5 uppercase tracking-wider">Comprovante de Retirada</p>
+                </div>
+
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Sócia:</span>
+                    <span className="font-semibold text-neutral-800">{receiptPartner.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Valor Retirado:</span>
+                    <span className="font-bold text-neutral-800 font-mono">{formatCurrency(receiptPartner.withdrawnValue)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Valor Total Previsto:</span>
+                    <span className="font-mono text-neutral-700">{formatCurrency(receiptPartner.expectedValue)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Mês de Referência:</span>
+                    <span className="font-semibold text-neutral-800">{selectedMonth}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Data do Registro:</span>
+                    <span className="text-neutral-700">{new Date().toLocaleDateString("pt-BR")}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500">Status:</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${receiptPartner.status === "Pago" ? "bg-green-100 text-green-700" : receiptPartner.status === "Parcial" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
+                      {receiptPartner.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-neutral-200 text-center">
+                  <p className="text-[9px] text-neutral-400 italic">Retirada registrada manualmente no CRM Compact Prime</p>
+                  <div className="flex items-center justify-center gap-1 mt-2">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    <span className="text-[9px] text-emerald-600 font-semibold uppercase tracking-wide">Registro verificado</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer actions */}
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => setShowReceiptModal(false)}
+                  className="flex-1 py-2 border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg text-xs font-semibold hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer"
+                >
+                  Fechar
+                </button>
+                <button
+                  onClick={() => handleReceiptPrint(receiptPartner)}
+                  className="flex items-center justify-center gap-1.5 flex-1 py-2 border border-[var(--border-default)] hover:border-[var(--gold-500)]/30 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg text-xs font-semibold hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Imprimir
+                </button>
+                <button
+                  onClick={() => handleReceiptPdf(receiptPartner)}
+                  className="flex items-center justify-center gap-1.5 flex-1 py-2 bg-gradient-to-r from-[var(--gold-500)] to-[var(--gold-300)] hover:from-[var(--gold-600)] hover:to-[var(--gold-400)] text-black rounded-lg text-xs font-bold transition-all cursor-pointer shadow-md"
+                >
+                  <FileDown className="w-3.5 h-3.5 stroke-[3]" />
+                  Baixar PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL: EXPORTAR PDF */}
+      {showPdfModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl animate-fade-in-up flex flex-col my-8">
+
+            <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-secondary)] shrink-0">
+              <div className="flex items-center gap-2">
+                <FileDown className="w-5 h-5 text-[var(--gold-300)]" />
+                <h3 className="font-bold text-[var(--text-primary)]">Relatório Mensal do Buffet — {selectedMonth}</h3>
+              </div>
+              <button onClick={() => setShowPdfModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Paper report */}
+            <div className="flex-1 p-6 overflow-y-auto bg-neutral-900 border-b border-[var(--border-subtle)] max-h-[520px]">
+              <div className="bg-white text-neutral-900 p-8 rounded-lg shadow-2xl border border-neutral-300" style={{ fontFamily: "'Georgia', serif" }}>
+
+                {/* Report header */}
+                <div className="border-b-2 border-amber-600 pb-4 mb-6 flex justify-between items-start">
+                  <div>
+                    <h2 className="text-lg font-bold uppercase tracking-wider text-amber-700 font-sans" style={{ fontFamily: "sans-serif" }}>COMPACT PRIME</h2>
+                    <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-sans font-semibold" style={{ fontFamily: "sans-serif" }}>Buffet — Relatório de Distribuição Mensal</p>
+                  </div>
+                  <div className="text-right text-xs text-neutral-500 font-sans" style={{ fontFamily: "sans-serif" }}>
+                    <p>Mês: <strong>{selectedMonth}</strong></p>
+                    <p className="mt-0.5">Emitido em: {new Date().toLocaleDateString("pt-BR")}</p>
+                  </div>
+                </div>
+
+                {/* Financial summary */}
+                <div className="mb-6 font-sans" style={{ fontFamily: "sans-serif" }}>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-3">Resumo Financeiro</h4>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="bg-neutral-50 border border-neutral-200 rounded p-3">
+                      <p className="text-neutral-400 text-[10px] uppercase">Receita do Mês</p>
+                      <p className="font-bold text-neutral-800 text-sm font-mono mt-0.5">{formatCurrency(activeData.revenue)}</p>
+                    </div>
+                    <div className="bg-neutral-50 border border-neutral-200 rounded p-3">
+                      <p className="text-neutral-400 text-[10px] uppercase">Despesas do Mês</p>
+                      <p className="font-bold text-red-700 text-sm font-mono mt-0.5">{formatCurrency(activeData.expenses)}</p>
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded p-3">
+                      <p className="text-emerald-600 text-[10px] uppercase font-semibold">Lucro Disponível</p>
+                      <p className="font-bold text-emerald-800 text-sm font-mono mt-0.5">{formatCurrency(activeData.netProfit)}</p>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-200 rounded p-3">
+                      <p className="text-amber-600 text-[10px] uppercase font-semibold">Reserva em Caixa</p>
+                      <p className="font-bold text-amber-800 text-sm font-mono mt-0.5">{formatCurrency(activeData.reserveValue)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Partner distribution */}
+                <div className="mb-6 font-sans" style={{ fontFamily: "sans-serif" }}>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-3">Distribuição das Sócias</h4>
+                  <div className="space-y-2">
+                    {activeData.partners.map((p) => (
+                      <div key={p.id} className="flex justify-between items-center text-xs border-b border-neutral-100 pb-2">
+                        <span className="font-semibold text-neutral-800">{p.name} <span className="font-normal text-neutral-400">({p.sharePercent}%)</span></span>
+                        <div className="text-right">
+                          <span className="font-mono text-neutral-800">{formatCurrency(p.withdrawnValue)}</span>
+                          <span className={`ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold ${p.status === "Pago" ? "bg-green-100 text-green-700" : p.status === "Parcial" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>{p.status}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Expense categories */}
+                <div className="mb-6 font-sans" style={{ fontFamily: "sans-serif" }}>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-3">Gastos por Categoria</h4>
+                  <div className="space-y-1.5">
+                    {activeData.categories.map((cat, i) => (
+                      <div key={i} className="flex justify-between text-xs">
+                        <span className="text-neutral-700 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                          {cat.name}
+                        </span>
+                        <span className="font-mono font-semibold text-neutral-800">{formatCurrency(cat.value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="border-t border-neutral-200 pt-4 text-center font-sans" style={{ fontFamily: "sans-serif" }}>
+                  <p className="text-[9px] text-neutral-400 italic">Relatório visual gerado pelo CRM Compact Prime — uso informativo e gerencial.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-[var(--bg-secondary)] flex justify-end gap-2 shrink-0">
+              <button
+                onClick={() => setShowPdfModal(false)}
+                className="px-4 py-2 border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg text-xs font-semibold hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer"
+              >
+                Fechar
+              </button>
+              <button
+                onClick={handlePdfDownload}
+                disabled={pdfDownloading}
+                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-[var(--gold-500)] to-[var(--gold-300)] hover:from-[var(--gold-600)] hover:to-[var(--gold-400)] text-black rounded-lg text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md"
+              >
+                {pdfDownloading ? "Aguarde..." : <><FileDown className="w-4 h-4 stroke-[3]" /> Baixar PDF</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast feedback */}
+      {showToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] animate-fade-in-up">
+          <div className="flex items-center gap-2.5 px-5 py-3 bg-[var(--bg-card)] border border-[var(--gold-500)]/30 rounded-xl shadow-2xl text-sm text-[var(--text-primary)] font-medium whitespace-nowrap">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            {toastMessage}
           </div>
         </div>
       )}

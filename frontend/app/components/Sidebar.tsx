@@ -13,7 +13,7 @@ const navItems: NavItem[] = [
   { label: "Agenda", icon: "agenda", href: "/agenda" },
   { label: "Propostas", icon: "propostas", href: "/propostas" },
   { label: "Financeiro", icon: "financeiro", href: "/financeiro" },
-  { label: "Sócias & Caixa", icon: "socias", href: "/socias-caixa" },
+  { label: "Distribuição Buffet", icon: "socias", href: "/socias-caixa" },
   { label: "Funcionários", icon: "funcionarios", href: "/funcionarios" },
   { label: "Configurações", icon: "config", href: "/configuracoes" },
 ];

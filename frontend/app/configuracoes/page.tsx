@@ -1,16 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  Building2, 
-  Briefcase, 
-  Sparkles, 
-  Users, 
-  DollarSign, 
-  Layers, 
-  Eye, 
-  Lock, 
-  Check, 
+import {
+  Building2,
+  Briefcase,
+  Sparkles,
+  Users,
+  DollarSign,
+  Layers,
+  Eye,
+  Lock,
+  Check,
   HelpCircle,
   Smartphone,
   Calendar,
@@ -19,7 +19,9 @@ import {
   Link2,
   Save,
   CheckCircle,
-  FileCheck
+  FileCheck,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { ServiceBadge } from "@/app/components/ServiceBadge";
 
@@ -641,9 +643,105 @@ export default function ConfiguacoesPage() {
                 <p className="text-xs text-[var(--text-muted)] mt-0.5">Controle a identidade visual premium e o comportamento gráfico do CRM.</p>
               </div>
 
+              {/* ── Seleção de Tema ── */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-[var(--gold-300)] uppercase tracking-wider">Seleção de Tema</h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                  {/* Card: Tema Escuro Premium */}
+                  <div className="relative rounded-xl border-2 border-[var(--gold-500)]/50 bg-[var(--bg-secondary)] overflow-hidden shadow-[0_0_16px_rgba(212,169,55,0.08)]">
+                    {/* Selected indicator */}
+                    <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center z-10">
+                      <Check className="w-3 h-3 text-white stroke-[3]" />
+                    </div>
+
+                    {/* Preview área: mini mock escuro */}
+                    <div className="h-28 flex overflow-hidden" style={{ background: "#0d0d0d" }}>
+                      {/* mini sidebar */}
+                      <div className="w-8 h-full flex flex-col gap-1 p-1.5" style={{ background: "#111111", borderRight: "1px solid #1e1e1e" }}>
+                        {[...Array(4)].map((_, i) => (
+                          <div key={i} className="w-full rounded" style={{ height: "6px", background: i === 1 ? "#c9a227" : "#1e1e1e" }} />
+                        ))}
+                      </div>
+                      {/* mini content */}
+                      <div className="flex-1 p-2 flex flex-col gap-1.5">
+                        <div className="flex gap-1">
+                          {[...Array(3)].map((_, i) => (
+                            <div key={i} className="flex-1 rounded" style={{ height: "22px", background: "#1a1a1a", border: "1px solid #1e1e1e" }} />
+                          ))}
+                        </div>
+                        <div className="rounded" style={{ height: "36px", background: "#1a1a1a", border: "1px solid #1e1e1e" }} />
+                        <div className="flex gap-1">
+                          <div className="rounded" style={{ height: "12px", width: "40%", background: "#c9a227", opacity: 0.6 }} />
+                          <div className="rounded" style={{ height: "12px", flex: 1, background: "#1e1e1e" }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-4 flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <Moon className="w-4 h-4 text-[var(--gold-400)]" />
+                        <span className="text-sm font-bold text-[var(--text-primary)]">Tema Escuro Premium</span>
+                        <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 uppercase tracking-wide">Ativo</span>
+                      </div>
+                      <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
+                        Identidade principal do CRM Compact Prime
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Card: Tema Claro Corporativo */}
+                  <div className="relative rounded-xl border-2 border-[var(--border-default)] bg-[var(--bg-secondary)] overflow-hidden opacity-80">
+                    {/* Lock indicator */}
+                    <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[var(--bg-input)] border border-[var(--border-default)] flex items-center justify-center z-10">
+                      <Lock className="w-2.5 h-2.5 text-[var(--text-muted)]" />
+                    </div>
+
+                    {/* Preview área: mini mock claro */}
+                    <div className="h-28 flex overflow-hidden" style={{ background: "#f2f2f0" }}>
+                      {/* mini sidebar */}
+                      <div className="w-8 h-full flex flex-col gap-1 p-1.5" style={{ background: "#ffffff", borderRight: "1px solid #e8e8e8" }}>
+                        {[...Array(4)].map((_, i) => (
+                          <div key={i} className="w-full rounded" style={{ height: "6px", background: i === 1 ? "#c9a227" : "#e8e8e8" }} />
+                        ))}
+                      </div>
+                      {/* mini content */}
+                      <div className="flex-1 p-2 flex flex-col gap-1.5">
+                        <div className="flex gap-1">
+                          {[...Array(3)].map((_, i) => (
+                            <div key={i} className="flex-1 rounded" style={{ height: "22px", background: "#ffffff", border: "1px solid #e5e5e5" }} />
+                          ))}
+                        </div>
+                        <div className="rounded" style={{ height: "36px", background: "#ffffff", border: "1px solid #e5e5e5" }} />
+                        <div className="flex gap-1">
+                          <div className="rounded" style={{ height: "12px", width: "40%", background: "#c9a227", opacity: 0.5 }} />
+                          <div className="rounded" style={{ height: "12px", flex: 1, background: "#e8e8e8" }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-4 flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <Sun className="w-4 h-4 text-amber-400" />
+                        <span className="text-sm font-bold text-[var(--text-primary)]">Tema Claro Corporativo</span>
+                        <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25 uppercase tracking-wide">Em breve</span>
+                      </div>
+                      <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
+                        Versão clara para ambientes iluminados e uso prolongado
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* ── Aparência ── */}
               <div className="space-y-4">
                 <h4 className="text-xs font-bold text-[var(--gold-300)] uppercase tracking-wider">Aparência do CRM</h4>
-                
+
                 <div className="space-y-3.5 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] p-5 rounded-xl">
                   
                   {/* Tema Escuro Toggle */}
