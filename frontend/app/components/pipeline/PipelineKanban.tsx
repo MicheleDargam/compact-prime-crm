@@ -10,7 +10,6 @@ import {
   useSensor,
   useSensors,
   DragStartEvent,
-  DragOverEvent,
   DragEndEvent,
   defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
@@ -28,6 +27,10 @@ export default function PipelineKanban() {
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [activeColumnColor, setActiveColumnColor] = useState<string>("");
   const [activeServiceFilter, setActiveServiceFilter] = useState<string>("Todos");
+  // After the entrance animation ends, remove the class so transform:translateY(0)
+  // is cleared. Without this, the retained transform creates a containing block
+  // that breaks position:fixed on DragOverlay, causing the card to appear below the cursor.
+  const [entranceAnimated, setEntranceAnimated] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -71,83 +74,6 @@ export default function PipelineKanban() {
     }
   };
 
-  const onDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeId = active.id;
-    const overId = over.id;
-
-    if (activeId === overId) return;
-
-    const isActiveLead = active.data.current?.type === "Lead";
-    const isOverLead = over.data.current?.type === "Lead";
-    const isOverColumn = over.data.current?.type === "Column";
-
-    if (!isActiveLead) return;
-
-    // Moving lead over another lead (in another column)
-    if (isActiveLead && isOverLead) {
-      const activeColumn = findColumnByLeadId(activeId as string);
-      const overColumn = findColumnByLeadId(overId as string);
-
-      if (!activeColumn || !overColumn) return;
-
-      if (activeColumn.id !== overColumn.id) {
-        setData((prev) => {
-          const activeItems = [...activeColumn.leadIds];
-          const overItems = [...overColumn.leadIds];
-          const activeIndex = activeItems.indexOf(activeId as string);
-          const overIndex = overItems.indexOf(overId as string);
-
-          activeItems.splice(activeIndex, 1);
-          
-          const isBelowOverItem =
-            over &&
-            active.rect.current.translated &&
-            active.rect.current.translated.top > over.rect.top + over.rect.height;
-
-          const modifier = isBelowOverItem ? 1 : 0;
-          const newIndex = overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
-          
-          overItems.splice(newIndex, 0, activeId as string);
-
-          return {
-            ...prev,
-            columns: prev.columns.map((col) => {
-              if (col.id === activeColumn.id) return { ...col, leadIds: activeItems };
-              if (col.id === overColumn.id) return { ...col, leadIds: overItems };
-              return col;
-            }),
-          };
-        });
-      }
-    }
-
-    // Moving lead over an empty column
-    if (isActiveLead && isOverColumn) {
-      const activeColumn = findColumnByLeadId(activeId as string);
-      if (!activeColumn) return;
-
-      if (activeColumn.id !== overId) {
-        setData((prev) => {
-          const activeItems = [...activeColumn.leadIds];
-          const activeIndex = activeItems.indexOf(activeId as string);
-          activeItems.splice(activeIndex, 1);
-
-          return {
-            ...prev,
-            columns: prev.columns.map((col) => {
-              if (col.id === activeColumn.id) return { ...col, leadIds: activeItems };
-              if (col.id === overId) return { ...col, leadIds: [...col.leadIds, activeId as string] };
-              return col;
-            }),
-          };
-        });
-      }
-    }
-  };
-
   const onDragEnd = (event: DragEndEvent) => {
     setActiveLead(null);
     setActiveColumnColor("");
@@ -155,33 +81,63 @@ export default function PipelineKanban() {
     const { active, over } = event;
     if (!over) return;
 
-    const activeId = active.id;
-    const overId = over.id;
-
+    const activeId = active.id as string;
+    const overId = over.id as string;
     if (activeId === overId) return;
 
-    const activeColumn = findColumnByLeadId(activeId as string);
-    const overColumn = findColumnByLeadId(overId as string);
+    const isOverLead = over.data.current?.type === "Lead";
+    const isOverColumn = over.data.current?.type === "Column";
 
-    if (!activeColumn || !overColumn) return;
+    setData((prev) => {
+      const activeColumn = prev.columns.find((col) => col.leadIds.includes(activeId));
+      if (!activeColumn) return prev;
 
-    // Sorting within the same column
-    if (activeColumn.id === overColumn.id) {
-      const activeIndex = activeColumn.leadIds.indexOf(activeId as string);
-      const overIndex = overColumn.leadIds.indexOf(overId as string);
+      if (isOverLead) {
+        const overColumn = prev.columns.find((col) => col.leadIds.includes(overId));
+        if (!overColumn) return prev;
 
-      if (activeIndex !== overIndex) {
-        setData((prev) => {
-          const newItems = arrayMove(activeColumn.leadIds, activeIndex, overIndex);
+        if (activeColumn.id === overColumn.id) {
+          const activeIndex = activeColumn.leadIds.indexOf(activeId);
+          const overIndex = activeColumn.leadIds.indexOf(overId);
+          if (activeIndex === overIndex) return prev;
           return {
             ...prev,
             columns: prev.columns.map((col) =>
-              col.id === activeColumn.id ? { ...col, leadIds: newItems } : col
+              col.id === activeColumn.id
+                ? { ...col, leadIds: arrayMove(col.leadIds, activeIndex, overIndex) }
+                : col
             ),
           };
-        });
+        }
+
+        const activeItems = activeColumn.leadIds.filter((id) => id !== activeId);
+        const overItems = overColumn.leadIds;
+        const overIndex = overItems.indexOf(overId);
+        return {
+          ...prev,
+          columns: prev.columns.map((col) => {
+            if (col.id === activeColumn.id) return { ...col, leadIds: activeItems };
+            if (col.id === overColumn.id) return { ...col, leadIds: [...overItems.slice(0, overIndex), activeId, ...overItems.slice(overIndex)] };
+            return col;
+          }),
+        };
       }
-    }
+
+      if (isOverColumn) {
+        if (activeColumn.id === overId) return prev;
+        const activeItems = activeColumn.leadIds.filter((id) => id !== activeId);
+        return {
+          ...prev,
+          columns: prev.columns.map((col) => {
+            if (col.id === activeColumn.id) return { ...col, leadIds: activeItems };
+            if (col.id === overId) return { ...col, leadIds: [...col.leadIds, activeId] };
+            return col;
+          }),
+        };
+      }
+
+      return prev;
+    });
   };
 
   const dropAnimation = {
@@ -189,7 +145,13 @@ export default function PipelineKanban() {
   };
 
   return (
-    <div className="animate-fade-in-up stagger-5" style={{ opacity: 0, animationFillMode: "forwards" }}>
+    <div
+      className={entranceAnimated ? undefined : "animate-fade-in-up stagger-5"}
+      style={entranceAnimated ? undefined : { opacity: 0 }}
+      onAnimationEnd={entranceAnimated ? undefined : (e) => {
+        if (e.target === e.currentTarget) setEntranceAnimated(true);
+      }}
+    >
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -233,7 +195,6 @@ export default function PipelineKanban() {
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={onDragStart}
-        onDragOver={onDragOver}
         onDragEnd={onDragEnd}
       >
         <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2" style={{ scrollbarWidth: "thin" }}>

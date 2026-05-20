@@ -157,7 +157,7 @@ export function KanbanCard({ lead, columnColor }: KanbanCardProps) {
 
   const style = {
     transition,
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
   };
 
   return (

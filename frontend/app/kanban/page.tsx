@@ -1,5 +1,5 @@
 import DashboardCards from "../components/DashboardCards";
-import PipelineKanban from "../components/pipeline/PipelineKanban";
+import PipelineKanbanClient from "../components/pipeline/PipelineKanbanClient";
 
 export default function KanbanPage() {
   return (
@@ -42,7 +42,7 @@ export default function KanbanPage() {
 
       {/* Pipeline preview */}
       <section id="pipeline-preview" aria-label="Pipeline comercial">
-        <PipelineKanban />
+        <PipelineKanbanClient />
       </section>
     </div>
   );
