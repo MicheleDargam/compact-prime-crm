@@ -22,6 +22,7 @@ import {
   Trash2,
   Crown,
   Star,
+  Gem,
 } from "lucide-react";
 import {
   type ServiceType,
@@ -236,6 +237,7 @@ export default function ClientesPage() {
   const [formEventDate, setFormEventDate] = useState("");
   const [formServicos, setFormServicos] = useState<ServiceType[]>([]);
   const [formObservacoes, setFormObservacoes] = useState("");
+  const [formCategory, setFormCategory] = useState<ClientCategory>("Cliente Novo");
 
   // Action dropdown & modals
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -257,6 +259,7 @@ export default function ClientesPage() {
     setFormNome(""); setFormCpf(""); setFormTelefone("");
     setFormEventType("Casamento"); setFormEventDate("");
     setFormServicos([]); setFormObservacoes("");
+    setFormCategory("Cliente Novo");
   };
 
   const handleSaveLead = () => {
@@ -278,7 +281,7 @@ export default function ClientesPage() {
       descontoCombo,
       subtotalCents: 0,
       totalCents: 0,
-      clientCategory: "Cliente Novo",
+      clientCategory: formCategory,
     };
     setLeads((prev) => [novoLead, ...prev]);
     setShowNewLead(false);
@@ -716,6 +719,42 @@ export default function ClientesPage() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Data do Evento</label>
                 <input type="date" value={formEventDate} onChange={(e) => setFormEventDate(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors" />
+              </div>
+
+              {/* Categoria do Cliente */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Categoria do Cliente</label>
+                <div className="flex gap-2">
+                  {(["Cliente Novo", "Cliente Prime", "Cliente VIP"] as ClientCategory[]).map((cat) => {
+                    const activeClass: Record<ClientCategory, string> = {
+                      "Cliente Novo": "text-neutral-300 bg-neutral-800/70 border-neutral-600/60",
+                      "Cliente Prime": "text-blue-300 bg-blue-500/15 border-blue-500/40",
+                      "Cliente VIP": "text-[var(--gold-300)] bg-[var(--gold-500)]/10 border-[var(--gold-500)]/40",
+                    };
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setFormCategory(cat)}
+                        className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border text-xs font-semibold transition-all flex-1 cursor-pointer ${
+                          formCategory === cat
+                            ? activeClass[cat]
+                            : "bg-[var(--bg-input)] text-[var(--text-muted)] border-[var(--border-default)] hover:border-[var(--border-subtle)]"
+                        }`}
+                      >
+                        {cat === "Cliente Novo" && <Star className="w-3 h-3 shrink-0" />}
+                        {cat === "Cliente Prime" && <Gem className="w-3 h-3 shrink-0" />}
+                        {cat === "Cliente VIP" && <Crown className="w-3 h-3 shrink-0" />}
+                        <span className="truncate">{cat}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[9px] text-[var(--text-muted)] leading-relaxed">
+                  <span className="font-semibold text-neutral-400">Novo:</span> primeiro contato ·{" "}
+                  <span className="font-semibold text-blue-400">Prime:</span> cliente recorrente ·{" "}
+                  <span className="font-semibold text-[var(--gold-400)]">VIP:</span> estratégico ou premium
+                </p>
               </div>
 
               <div className="flex flex-col gap-2">
