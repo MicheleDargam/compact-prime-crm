@@ -9,10 +9,10 @@ export default function KanbanPage() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
-              Kanban
+              Painel de Clientes
             </h1>
             <p className="text-sm mt-1 italic" style={{ color: "var(--gold-300)" }}>
-              Operação Comercial
+              Pipeline comercial de clientes
             </p>
           </div>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>

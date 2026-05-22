@@ -159,13 +159,13 @@ export default function PipelineKanban() {
             Pipeline Comercial
           </h2>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-            Arraste os cards para avançar os leads de etapa
+            Arraste os cards para avançar os clientes de etapa
           </p>
         </div>
         <span className="text-xs font-semibold px-4 py-2 rounded-full self-start md:self-auto" style={{ background: "var(--bg-card)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
-          {activeServiceFilter === "Todos" 
-            ? `${totalLeads} leads ativos` 
-            : `${filteredTotalCount} de ${totalLeads} leads (${activeServiceFilter})`}
+          {activeServiceFilter === "Todos"
+            ? `${totalLeads} clientes ativos`
+            : `${filteredTotalCount} de ${totalLeads} clientes (${activeServiceFilter})`}
         </span>
       </div>
 

@@ -8,8 +8,8 @@ type NavItem = { label: string; icon: string; href: string };
 
 const navItems: NavItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/" },
-  { label: "Leads", icon: "leads", href: "/leads" },
-  { label: "Kanban", icon: "kanban", href: "/kanban" },
+  { label: "Clientes", icon: "leads", href: "/leads" },
+  { label: "Painel de Clientes", icon: "kanban", href: "/kanban" },
   { label: "Agenda", icon: "agenda", href: "/agenda" },
   { label: "Propostas", icon: "propostas", href: "/propostas" },
   { label: "Financeiro", icon: "financeiro", href: "/financeiro" },

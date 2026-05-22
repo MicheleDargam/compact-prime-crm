@@ -1,10 +1,28 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Lead } from "./pipeline-data";
+import { Lead, ClientCategory } from "./pipeline-data";
 import { CSSProperties } from "react";
 import { isCombo } from "@/app/data/services";
 import { ServiceBadgeGroup } from "@/app/components/ServiceBadge";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Crown, Star, Gem } from "lucide-react";
+
+const categoryConfig: Record<ClientCategory, { label: string; icon: React.ReactNode; classes: string }> = {
+  "Cliente VIP": {
+    label: "VIP",
+    icon: <Crown className="w-2.5 h-2.5" />,
+    classes: "text-[var(--gold-300)] border-[var(--gold-500)]/40 bg-[var(--gold-500)]/10",
+  },
+  "Cliente Prime": {
+    label: "PRIME",
+    icon: <Gem className="w-2.5 h-2.5" />,
+    classes: "text-blue-300 border-blue-500/40 bg-blue-500/10",
+  },
+  "Cliente Novo": {
+    label: "NOVO",
+    icon: <Star className="w-2.5 h-2.5" />,
+    classes: "text-neutral-400 border-neutral-600/50 bg-neutral-800/50",
+  },
+};
 
 interface KanbanCardProps {
   lead: Lead;
@@ -69,6 +87,15 @@ export function CardContent({ lead, columnColor, innerRef, style, attributes, li
       <div className="flex justify-between items-start mb-2.5">
         <div>
           <p className="text-sm font-bold truncate max-w-[130px]" style={{ color: "var(--text-primary)" }}>{lead.name}</p>
+          {lead.clientCategory && (() => {
+            const cfg = categoryConfig[lead.clientCategory];
+            return (
+              <span className={`inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold border ${cfg.classes}`}>
+                {cfg.icon}
+                {cfg.label}
+              </span>
+            );
+          })()}
           <p className="text-[10px] uppercase font-bold mt-0.5 tracking-wider" style={{ color: columnColor }}>{lead.eventType}</p>
         </div>
         <div className="text-right flex-shrink-0">

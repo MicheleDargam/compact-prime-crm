@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useCrmData, getBuffetRevenue, EXPENSE_CATEGORIES, CATEGORY_COLORS, isoToDisplayDate, dateToMonth } from "../context/CrmDataContext";
+import type { ExpenseCategory } from "../context/CrmDataContext";
 import {
   TrendingUp,
   TrendingDown,
@@ -19,6 +21,7 @@ import {
   FileDown,
   ShieldCheck,
   Printer,
+  Plus,
 } from "lucide-react";
 
 // Types
@@ -142,8 +145,59 @@ const statusStyles: Record<PayoutStatus, { text: string; bg: string; border: str
 };
 
 export default function DistribuicaoBuffetPage() {
+  const { addExpense, getBuffetExpensesByMonth, getBuffetCategoriesForMonth, buffetMovementLog, addBuffetLog } = useCrmData();
+
   const [selectedMonth, setSelectedMonth] = useState<string>("Maio 2026");
   const [activeData, setActiveData] = useState<MonthlyData>(mockMonthlyData["Maio 2026"]);
+
+  // Derived financial values from shared context
+  const buffetRevenue = getBuffetRevenue(selectedMonth);
+  const buffetTotalExpenses = getBuffetExpensesByMonth(selectedMonth).reduce((s, e) => s + e.value, 0);
+  const buffetNetProfit = buffetRevenue - buffetTotalExpenses;
+  const buffetCategoryTotals = getBuffetCategoriesForMonth(selectedMonth);
+  const buffetCategoriesForDisplay = EXPENSE_CATEGORIES
+    .map((name) => ({ name, value: buffetCategoryTotals[name], color: CATEGORY_COLORS[name] }))
+    .filter((c) => c.value > 0);
+
+  // Expense modal
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [expenseConfirmed, setExpenseConfirmed] = useState(false);
+  const [expenseDesc, setExpenseDesc] = useState("");
+  const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>("Fornecedores");
+  const [expenseSupplier, setExpenseSupplier] = useState("");
+  const [expenseValue, setExpenseValue] = useState("");
+  const [expenseDate, setExpenseDate] = useState("");
+  const [expensePaymentMethod, setExpensePaymentMethod] = useState("Transferência");
+  const [expenseObservations, setExpenseObservations] = useState("");
+  const [expenseHasReceipt, setExpenseHasReceipt] = useState(false);
+
+  function closeExpenseModal() {
+    setShowExpenseModal(false);
+    setExpenseConfirmed(false);
+    setExpenseDesc(""); setExpenseCategory("Fornecedores"); setExpenseSupplier("");
+    setExpenseValue(""); setExpenseDate(""); setExpensePaymentMethod("Transferência");
+    setExpenseObservations(""); setExpenseHasReceipt(false);
+  }
+
+  function handleSaveExpense() {
+    const val = parseFloat(expenseValue) || 0;
+    const displayDate = isoToDisplayDate(expenseDate);
+    const month = dateToMonth(expenseDate);
+    addExpense({
+      description: expenseDesc,
+      category: expenseCategory,
+      supplier: expenseSupplier,
+      service: "buffet",
+      value: val,
+      date: displayDate,
+      month,
+      paymentMethod: expensePaymentMethod,
+      observations: expenseObservations,
+      hasReceipt: expenseHasReceipt,
+    });
+    addBuffetLog(`[CAI] Despesa registrada no módulo Buffet: ${expenseDesc} — ${formatCurrency(val)}.`);
+    setExpenseConfirmed(true);
+  }
 
   // Withdrawal modal
   const [showPayoutModal, setShowPayoutModal] = useState(false);
@@ -168,21 +222,11 @@ export default function DistribuicaoBuffetPage() {
     setTimeout(() => setShowToast(false), 3200);
   };
 
-  // Movement log
-  const [movementLogs, setMovementLogs] = useState<string[]>([
-    "[RET] Retirada registrada — Clara Silva — R$ 10.000,00",
-    "[DOC] Comprovante gerado — Beatriz Santos",
-    "[CAI] Reserva atualizada — +R$ 8.000,00",
-    "[REL] Relatório mensal exportado — Abril 2026",
-    "[CAI] Meta da reserva definida — R$ 50.000,00",
-    "[SIS] Painel carregado — Buffet Compact Prime.",
-  ]);
-
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const month = e.target.value;
     setSelectedMonth(month);
     setActiveData(mockMonthlyData[month]);
-    setMovementLogs(prev => [`Visualização alterada para ${month}.`, ...prev]);
+    addBuffetLog(`[SIS] Visualização alterada para ${month}.`);
   };
 
   const openWithdrawal = (partner: PartnerPayout) => {
@@ -194,17 +238,17 @@ export default function DistribuicaoBuffetPage() {
   const openReceipt = (partner: PartnerPayout) => {
     setReceiptPartner(partner);
     setShowReceiptModal(true);
-    setMovementLogs(prev => [`[DOC] Comprovante visualizado — ${partner.name}.`, ...prev]);
+    addBuffetLog(`[DOC] Comprovante visualizado — ${partner.name}.`);
   };
 
   const handleReceiptPrint = (partner: PartnerPayout) => {
     showToastFeedback("Comprovante preparado para impressão.");
-    setMovementLogs(prev => [`[IMP] Impressão solicitada — ${partner.name}.`, ...prev]);
+    addBuffetLog(`[IMP] Impressão solicitada — ${partner.name}.`);
   };
 
   const handleReceiptPdf = (partner: PartnerPayout) => {
     showToastFeedback("PDF do comprovante gerado visualmente.");
-    setMovementLogs(prev => [`[PDF] Comprovante PDF gerado — ${partner.name} — ${formatCurrency(partner.withdrawnValue)}.`, ...prev]);
+    addBuffetLog(`[PDF] Comprovante PDF gerado — ${partner.name} — ${formatCurrency(partner.withdrawnValue)}.`);
   };
 
   const confirmWithdrawal = (e: React.FormEvent) => {
@@ -222,17 +266,14 @@ export default function DistribuicaoBuffetPage() {
         p.id === selectedPartner.id ? { ...p, withdrawnValue: newWithdrawn, status: newStatus } : p
       )
     }));
-    setMovementLogs(prev => [
-      `Retirada de ${formatCurrency(amountNum)} registrada para ${selectedPartner.name}. Status: ${newStatus}.`,
-      ...prev
-    ]);
+    addBuffetLog(`[RET] Retirada de ${formatCurrency(amountNum)} registrada — ${selectedPartner.name}. Status: ${newStatus}.`);
     setShowPayoutModal(false);
     setSelectedPartner(null);
   };
 
   const handleExportPdf = () => {
     setShowPdfModal(true);
-    setMovementLogs(prev => [`Relatório PDF do mês ${selectedMonth} gerado.`, ...prev]);
+    addBuffetLog(`[REL] Relatório mensal de ${selectedMonth} exportado em PDF.`);
   };
 
   const handlePdfDownload = () => {
@@ -283,6 +324,14 @@ export default function DistribuicaoBuffetPage() {
             <Download className="w-4 h-4 text-[var(--gold-300)]" />
             <span className="hidden sm:inline">Exportar PDF</span>
           </button>
+
+          <button
+            onClick={() => setShowExpenseModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 text-xs md:text-sm font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 hover:border-rose-500/40 rounded-xl transition-all cursor-pointer shadow-card"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Registrar Despesa</span>
+          </button>
         </div>
       </header>
 
@@ -303,7 +352,7 @@ export default function DistribuicaoBuffetPage() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Receita do Mês</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{formatCurrency(activeData.revenue)}</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{formatCurrency(buffetRevenue)}</p>
           </div>
         </div>
 
@@ -314,7 +363,7 @@ export default function DistribuicaoBuffetPage() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Despesas do Mês</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{formatCurrency(activeData.expenses)}</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{formatCurrency(buffetTotalExpenses)}</p>
           </div>
         </div>
 
@@ -325,7 +374,7 @@ export default function DistribuicaoBuffetPage() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Lucro Disponível</p>
-            <p className="text-2xl font-bold text-emerald-400 mt-0.5">{formatCurrency(activeData.netProfit)}</p>
+            <p className="text-2xl font-bold text-emerald-400 mt-0.5">{formatCurrency(buffetNetProfit)}</p>
           </div>
         </div>
 
@@ -351,7 +400,7 @@ export default function DistribuicaoBuffetPage() {
             </span>
           </div>
           <span className="text-xs text-[var(--text-muted)]">
-            Total Distribuído: {formatCurrency(activeData.netProfit - activeData.reserveValue)}
+            Total Distribuído: {formatCurrency(buffetNetProfit - activeData.reserveValue)}
           </span>
         </div>
 
@@ -489,13 +538,13 @@ export default function DistribuicaoBuffetPage() {
                 <p className="text-xs text-[var(--text-secondary)] font-medium">Despesas do mês selecionado</p>
                 <div className="flex items-center gap-1.5 text-xs text-[var(--gold-300)] font-semibold">
                   <PieChart className="w-3.5 h-3.5" />
-                  <span>Total: {formatCurrency(activeData.expenses)}</span>
+                  <span>Total: {formatCurrency(buffetTotalExpenses)}</span>
                 </div>
               </div>
 
               <div className="space-y-4">
-                {activeData.categories.map((cat, idx) => {
-                  const percentage = (cat.value / activeData.expenses) * 100;
+                {buffetCategoriesForDisplay.map((cat, idx) => {
+                  const percentage = buffetTotalExpenses > 0 ? (cat.value / buffetTotalExpenses) * 100 : 0;
                   return (
                     <div key={idx} className="space-y-1">
                       <div className="flex justify-between items-center text-xs">
@@ -528,8 +577,8 @@ export default function DistribuicaoBuffetPage() {
               </div>
               <p className="text-[10px] text-[var(--text-muted)] mb-2 italic">Registro das principais movimentações internas do Buffet.</p>
               <div className="bg-[var(--bg-primary)] p-3 rounded-lg border border-[var(--border-subtle)] text-[10px] font-mono h-28 overflow-y-auto space-y-1.5 text-[var(--text-secondary)]">
-                {movementLogs.map((log, i) => {
-                  const tag = log.match(/^\[(\w+)\]/)?.[1] ?? "";
+                {buffetMovementLog.map((entry) => {
+                  const tag = entry.text.match(/^\[(\w+)\]/)?.[1] ?? "";
                   const tagColor: Record<string, string> = {
                     RET: "text-amber-400",
                     DOC: "text-blue-400",
@@ -540,9 +589,9 @@ export default function DistribuicaoBuffetPage() {
                     SIS: "text-[var(--text-muted)]",
                   };
                   return (
-                    <div key={i} className="flex gap-1.5 items-start">
+                    <div key={entry.id} className="flex gap-1.5 items-start">
                       <span className={`shrink-0 font-bold ${tagColor[tag] ?? "text-[var(--gold-400)]"}`}>&gt;</span>
-                      <span>{log}</span>
+                      <span>{entry.text}</span>
                     </div>
                   );
                 })}
@@ -551,6 +600,170 @@ export default function DistribuicaoBuffetPage() {
           </div>
         </div>
       </div>
+
+      {/* ======================================================== */}
+      {/* MODAL: REGISTRAR DESPESA DO BUFFET */}
+      {showExpenseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[var(--bg-card)] border border-rose-500/20 rounded-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[92vh] shadow-2xl">
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400">
+                  <TrendingDown className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-[var(--text-primary)]">Registrar Despesa do Buffet</h3>
+                  <p className="text-xs text-[var(--text-muted)]">Despesa registrada no módulo Buffet</p>
+                </div>
+              </div>
+              <button onClick={closeExpenseModal} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 overflow-y-auto flex flex-col gap-4">
+              {expenseConfirmed ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-4">
+                  <CheckCircle2 className="w-14 h-14 text-rose-400" />
+                  <p className="text-lg font-bold text-[var(--text-primary)]">Despesa registrada!</p>
+                  <p className="text-sm text-[var(--text-muted)] text-center">
+                    Despesa registrada no módulo Buffet. Os totais e categorias deste painel foram atualizados.
+                  </p>
+                  <button onClick={closeExpenseModal} className="px-6 py-2.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-lg text-sm font-semibold hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer">
+                    Fechar
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Badge: módulo fixo */}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--gold-500)]/5 border border-[var(--gold-500)]/15">
+                    <Sparkles className="w-3.5 h-3.5 text-[var(--gold-400)] shrink-0" />
+                    <span className="text-xs text-[var(--text-muted)]">Esta despesa será vinculada exclusivamente ao <strong className="text-[var(--gold-300)]">Buffet Compact Prime</strong>.</span>
+                  </div>
+
+                  {/* Descrição */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                      Descrição <span className="text-rose-400">*</span>
+                    </label>
+                    <input
+                      value={expenseDesc}
+                      onChange={(e) => setExpenseDesc(e.target.value)}
+                      type="text"
+                      placeholder="Ex: Pagamento fornecedor de alimentos"
+                      className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-rose-500/40 transition-colors"
+                    />
+                  </div>
+
+                  {/* Categoria */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Categoria</label>
+                    <select
+                      value={expenseCategory}
+                      onChange={(e) => setExpenseCategory(e.target.value as ExpenseCategory)}
+                      className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-rose-500/40 transition-colors"
+                    >
+                      {EXPENSE_CATEGORIES.filter((c) => c !== "Funcionários").map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <p className="text-[10px] text-[var(--text-muted)] italic mt-0.5">
+                      Pagamentos de equipe devem ser registrados na página Funcionários.
+                    </p>
+                  </div>
+
+                  {/* Fornecedor */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Fornecedor / Responsável</label>
+                    <input
+                      value={expenseSupplier}
+                      onChange={(e) => setExpenseSupplier(e.target.value)}
+                      type="text"
+                      placeholder="Ex: Distribuidora ABC, Folha Interna"
+                      className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-rose-500/40 transition-colors"
+                    />
+                  </div>
+
+                  {/* Valor + Data */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                        Valor (R$) <span className="text-rose-400">*</span>
+                      </label>
+                      <input
+                        value={expenseValue}
+                        onChange={(e) => setExpenseValue(e.target.value)}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-rose-500/40 transition-colors"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                        Data <span className="text-rose-400">*</span>
+                      </label>
+                      <input
+                        value={expenseDate}
+                        onChange={(e) => setExpenseDate(e.target.value)}
+                        type="date"
+                        className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-rose-500/40 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Forma de pagamento */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Forma de Pagamento</label>
+                    <select
+                      value={expensePaymentMethod}
+                      onChange={(e) => setExpensePaymentMethod(e.target.value)}
+                      className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-rose-500/40 transition-colors"
+                    >
+                      <option>Transferência</option>
+                      <option>PIX</option>
+                      <option>Boleto</option>
+                      <option>Cartão de Crédito</option>
+                      <option>Dinheiro</option>
+                      <option>Débito automático</option>
+                    </select>
+                  </div>
+
+                  {/* Observações */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Observações</label>
+                    <textarea
+                      value={expenseObservations}
+                      onChange={(e) => setExpenseObservations(e.target.value)}
+                      rows={2}
+                      placeholder="Notas internas sobre esta despesa..."
+                      className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-rose-500/40 transition-colors resize-none"
+                    />
+                  </div>
+
+                  {/* Comprovante */}
+                  <label className="flex items-center gap-3 cursor-pointer group" onClick={() => setExpenseHasReceipt((v) => !v)}>
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${expenseHasReceipt ? "border-rose-500/60 bg-rose-500/10" : "border-[var(--border-default)] bg-[var(--bg-input)]"}`}>
+                      {expenseHasReceipt && <CheckCircle2 className="w-3.5 h-3.5 text-rose-400" />}
+                    </div>
+                    <span className="text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">Comprovante fiscal anexado</span>
+                  </label>
+
+                  {/* Submit */}
+                  <button
+                    onClick={handleSaveExpense}
+                    disabled={!expenseDesc || !expenseValue || !expenseDate}
+                    className="w-full py-3 rounded-xl text-sm font-bold transition-all bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 hover:border-rose-500/50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    Registrar Despesa do Buffet
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ======================================================== */}
       {/* MODAL: REGISTRAR RETIRADA */}
@@ -753,15 +966,15 @@ export default function DistribuicaoBuffetPage() {
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div className="bg-neutral-50 border border-neutral-200 rounded p-3">
                       <p className="text-neutral-400 text-[10px] uppercase">Receita do Mês</p>
-                      <p className="font-bold text-neutral-800 text-sm font-mono mt-0.5">{formatCurrency(activeData.revenue)}</p>
+                      <p className="font-bold text-neutral-800 text-sm font-mono mt-0.5">{formatCurrency(buffetRevenue)}</p>
                     </div>
                     <div className="bg-neutral-50 border border-neutral-200 rounded p-3">
                       <p className="text-neutral-400 text-[10px] uppercase">Despesas do Mês</p>
-                      <p className="font-bold text-red-700 text-sm font-mono mt-0.5">{formatCurrency(activeData.expenses)}</p>
+                      <p className="font-bold text-red-700 text-sm font-mono mt-0.5">{formatCurrency(buffetTotalExpenses)}</p>
                     </div>
                     <div className="bg-emerald-50 border border-emerald-200 rounded p-3">
                       <p className="text-emerald-600 text-[10px] uppercase font-semibold">Lucro Disponível</p>
-                      <p className="font-bold text-emerald-800 text-sm font-mono mt-0.5">{formatCurrency(activeData.netProfit)}</p>
+                      <p className="font-bold text-emerald-800 text-sm font-mono mt-0.5">{formatCurrency(buffetNetProfit)}</p>
                     </div>
                     <div className="bg-amber-50 border border-amber-200 rounded p-3">
                       <p className="text-amber-600 text-[10px] uppercase font-semibold">Reserva em Caixa</p>
@@ -790,7 +1003,7 @@ export default function DistribuicaoBuffetPage() {
                 <div className="mb-6 font-sans" style={{ fontFamily: "sans-serif" }}>
                   <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-3">Gastos por Categoria</h4>
                   <div className="space-y-1.5">
-                    {activeData.categories.map((cat, i) => (
+                    {buffetCategoriesForDisplay.map((cat, i) => (
                       <div key={i} className="flex justify-between text-xs">
                         <span className="text-neutral-700 flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />

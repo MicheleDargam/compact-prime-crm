@@ -22,16 +22,55 @@ import {
   FileCheck,
   Moon,
   Sun,
+  Tag,
+  Crown,
+  Gem,
+  Star,
+  ArrowUpRight,
+  Plus,
+  Pencil,
+  X,
 } from "lucide-react";
 import { ServiceBadge } from "@/app/components/ServiceBadge";
 
-type TabId = "empresa" | "servicos" | "socias" | "financeiro" | "integracoes" | "visual";
+type TabId = "empresa" | "servicos" | "socias" | "financeiro" | "integracoes" | "visual" | "clientes";
 
 interface TabItem {
   id: TabId;
   label: string;
   icon: React.ReactNode;
 }
+
+type ClientCategoryOption = "Cliente Novo" | "Cliente Prime" | "Cliente VIP";
+type ServiceOption = "Buffet" | "Decoração" | "Fotografia";
+
+interface PromotionRule {
+  id: string;
+  name: string;
+  clientCategory: ClientCategoryOption;
+  services: ServiceOption[];
+  discount: number;
+  active: boolean;
+  observations: string;
+}
+
+const INITIAL_RULES: PromotionRule[] = [
+  { id: "rule-1", name: "Pacote Fotográfico – Novos Clientes", clientCategory: "Cliente Novo", services: ["Buffet", "Fotografia"], discount: 10, active: true, observations: "Válido para o primeiro evento contratado." },
+  { id: "rule-2", name: "Especial Prime – Buffet & Decoração", clientCategory: "Cliente Prime", services: ["Buffet", "Decoração"], discount: 15, active: true, observations: "Exclusivo para clientes recorrentes." },
+  { id: "rule-3", name: "Combo VIP Completo", clientCategory: "Cliente VIP", services: ["Buffet", "Decoração", "Fotografia"], discount: 20, active: true, observations: "Pacote completo para clientes estratégicos e alto ticket." },
+];
+
+const CATEGORY_BADGE_STYLE: Record<ClientCategoryOption, string> = {
+  "Cliente Novo": "text-neutral-400 border-neutral-600/50 bg-neutral-800/50",
+  "Cliente Prime": "text-blue-300 border-blue-500/40 bg-blue-500/10",
+  "Cliente VIP": "text-[var(--gold-300)] border-[var(--gold-500)]/40 bg-[var(--gold-500)]/10",
+};
+
+const SERVICE_BADGE_STYLE: Record<ServiceOption, string> = {
+  "Buffet": "text-[var(--gold-300)] bg-[var(--gold-500)]/10 border-[var(--gold-500)]/20",
+  "Decoração": "text-pink-300 bg-pink-500/10 border-pink-500/20",
+  "Fotografia": "text-blue-300 bg-blue-500/10 border-blue-500/20",
+};
 
 export default function ConfiguacoesPage() {
   const [activeTab, setActiveTab] = useState<TabId>("empresa");
@@ -56,6 +95,19 @@ export default function ConfiguacoesPage() {
   const [sinalMinimo, setSinalMinimo] = useState("30% de sinal para reserva");
   const [observacoesFinanceiras, setObservacoesFinanceiras] = useState("Valores sujeitos a alteração em caso de aumento expressivo de insumos.");
 
+  // Client Categories States
+  const [criterioNovo, setCriterioNovo] = useState("Primeiro contato ou primeira contratação com a Compact Prime.");
+
+  const [prioridadeNovo, setPrioridadeNovo] = useState<"Normal" | "Alta" | "Máxima">("Normal");
+
+  const [criterioPrime, setCriterioPrime] = useState("Cliente que já contratou mais de uma vez com a Compact Prime.");
+
+  const [prioridadePrime, setPrioridadePrime] = useState<"Normal" | "Alta" | "Máxima">("Alta");
+
+  const [criterioVip, setCriterioVip] = useState("Cliente estratégico, alto ticket ou indicação importante de parceiro.");
+
+  const [prioridadeVip, setPrioridadeVip] = useState<"Normal" | "Alta" | "Máxima">("Máxima");
+
   // Preferences Toggles
   const [temaEscuro, setTemaEscuro] = useState(true);
   const [identidadeDourada, setIdentidadeDourada] = useState(true);
@@ -68,6 +120,7 @@ export default function ConfiguacoesPage() {
     { id: "financeiro", label: "Financeiro Padrão", icon: <DollarSign className="w-4 h-4" /> },
     { id: "integracoes", label: "Integrações Futuras", icon: <Link2 className="w-4 h-4" /> },
     { id: "visual", label: "Visual & Temas", icon: <Eye className="w-4 h-4" /> },
+    { id: "clientes", label: "Clientes & Categorias", icon: <Tag className="w-4 h-4" /> },
   ];
 
   const handleSave = (sectionName: string) => {
@@ -77,6 +130,61 @@ export default function ConfiguacoesPage() {
       setShowToast(false);
     }, 3000);
   };
+
+  // Promotion Rules
+  const [promotionRules, setPromotionRules] = useState<PromotionRule[]>(INITIAL_RULES);
+  const [showRuleForm, setShowRuleForm] = useState(false);
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [ruleFormName, setRuleFormName] = useState("");
+  const [ruleFormCategory, setRuleFormCategory] = useState<ClientCategoryOption>("Cliente Novo");
+  const [ruleFormServices, setRuleFormServices] = useState<ServiceOption[]>([]);
+  const [ruleFormDiscount, setRuleFormDiscount] = useState(10);
+  const [ruleFormActive, setRuleFormActive] = useState(true);
+  const [ruleFormObservations, setRuleFormObservations] = useState("");
+
+  const cancelRuleForm = () => {
+    setShowRuleForm(false);
+    setEditingRuleId(null);
+    setRuleFormName("");
+    setRuleFormCategory("Cliente Novo");
+    setRuleFormServices([]);
+    setRuleFormDiscount(10);
+    setRuleFormActive(true);
+    setRuleFormObservations("");
+  };
+
+  const openNewRuleForm = () => { cancelRuleForm(); setShowRuleForm(true); };
+
+  const openEditRuleForm = (rule: PromotionRule) => {
+    setRuleFormName(rule.name);
+    setRuleFormCategory(rule.clientCategory);
+    setRuleFormServices([...rule.services]);
+    setRuleFormDiscount(rule.discount);
+    setRuleFormActive(rule.active);
+    setRuleFormObservations(rule.observations);
+    setEditingRuleId(rule.id);
+    setShowRuleForm(true);
+  };
+
+  const handleSaveRule = () => {
+    if (!ruleFormName.trim() || ruleFormServices.length === 0) return;
+    if (editingRuleId) {
+      setPromotionRules(prev => prev.map(r =>
+        r.id === editingRuleId
+          ? { ...r, name: ruleFormName, clientCategory: ruleFormCategory, services: ruleFormServices, discount: ruleFormDiscount, active: ruleFormActive, observations: ruleFormObservations }
+          : r
+      ));
+    } else {
+      setPromotionRules(prev => [...prev, { id: `rule-${Date.now()}`, name: ruleFormName, clientCategory: ruleFormCategory, services: ruleFormServices, discount: ruleFormDiscount, active: ruleFormActive, observations: ruleFormObservations }]);
+    }
+    cancelRuleForm();
+    handleSave("Regras Comerciais");
+  };
+
+  const toggleRuleActive = (id: string) => setPromotionRules(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r));
+  const deleteRule = (id: string) => setPromotionRules(prev => prev.filter(r => r.id !== id));
+  const toggleRuleService = (svc: ServiceOption) => setRuleFormServices(prev => prev.includes(svc) ? prev.filter(s => s !== svc) : [...prev, svc]);
+  const getActiveRulesForCategory = (cat: ClientCategoryOption) => promotionRules.filter(r => r.clientCategory === cat && r.active);
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-primary)] p-4 md:p-8 animate-fade-in-up overflow-y-auto relative">
@@ -294,50 +402,280 @@ export default function ConfiguacoesPage() {
                 </div>
               </div>
 
-              {/* Combo Rules Section */}
-              <div className="p-5 rounded-xl bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-secondary)]/50 border border-[var(--border-subtle)] space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-[var(--gold-400)]" />
-                    <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Regras de Combo Multi-Serviços</h4>
-                  </div>
-                  <span className="text-[10px] bg-[var(--gold-500)]/15 text-[var(--gold-300)] border border-[var(--gold-500)]/30 rounded-full px-3 py-1 uppercase font-bold tracking-wider font-sans">
-                    Combo Ativado
-                  </span>
-                </div>
+              {/* Resumo das Promoções Ativas */}
+              {(() => {
+                const activeRules = promotionRules.filter(r => r.active);
+                const categoryTopStrip: Record<ClientCategoryOption, string> = {
+                  "Cliente Novo": "from-neutral-500/60",
+                  "Cliente Prime": "from-blue-500/60",
+                  "Cliente VIP": "from-[var(--gold-500)]/80",
+                };
+                return (
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-secondary)]/50 border border-[var(--border-subtle)] space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-[var(--gold-400)]" />
+                        <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Resumo das Promoções Ativas</h4>
+                      </div>
+                      <span className={`text-[10px] border rounded-full px-3 py-1 uppercase font-bold tracking-wider font-sans shrink-0 ${activeRules.length > 0 ? "bg-[var(--gold-500)]/15 text-[var(--gold-300)] border-[var(--gold-500)]/30" : "bg-neutral-800/50 text-neutral-500 border-neutral-700/50"}`}>
+                        {activeRules.length} {activeRules.length === 1 ? "promoção ativa" : "promoções ativas"}
+                      </span>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                  <div className="p-3 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg flex items-center justify-between">
-                    <span className="text-xs text-[var(--text-secondary)]">2 Serviços Selecionados</span>
-                    <span className="text-xs font-bold font-mono text-emerald-400">5% Desconto</span>
-                  </div>
+                    {/* Campaign Cards */}
+                    {activeRules.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {activeRules.map(rule => (
+                          <div key={rule.id} className="relative rounded-xl bg-[var(--bg-card)] border border-[var(--border-default)] overflow-hidden hover:border-[var(--gold-500)]/20 transition-all group">
+                            <div className={`h-[2px] w-full bg-gradient-to-r ${categoryTopStrip[rule.clientCategory]} to-transparent`} />
+                            <div className="p-3.5 flex flex-col gap-2.5">
+                              {/* Category badge */}
+                              <span className={`inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[9px] font-bold border ${CATEGORY_BADGE_STYLE[rule.clientCategory]}`}>
+                                {rule.clientCategory}
+                              </span>
 
-                  <div className="p-3 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg flex items-center justify-between">
-                    <span className="text-xs text-[var(--text-secondary)]">3 Serviços Selecionados</span>
-                    <span className="text-xs font-bold font-mono text-emerald-400">10% Desconto</span>
-                  </div>
-                </div>
+                              {/* Services */}
+                              <div className="flex flex-wrap gap-1">
+                                {rule.services.map((svc, i) => (
+                                  <React.Fragment key={svc}>
+                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border ${SERVICE_BADGE_STYLE[svc]}`}>{svc}</span>
+                                    {i < rule.services.length - 1 && <span className="text-[var(--text-muted)] text-[9px] self-center">+</span>}
+                                  </React.Fragment>
+                                ))}
+                              </div>
 
-                {/* Pacote Premium Visual Preview Box */}
-                <div className="p-4 bg-[var(--gold-500)]/5 border border-dashed border-[var(--gold-500)]/20 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs">
+                              {/* Discount — big number */}
+                              <div className="flex items-end justify-between mt-1">
+                                <div>
+                                  <span className="text-2xl font-bold font-mono text-emerald-400 leading-none">{rule.discount}</span>
+                                  <span className="text-sm font-bold text-emerald-400/70 ml-0.5">%</span>
+                                  <p className="text-[9px] text-emerald-600/70 font-semibold mt-0.5">desconto</p>
+                                </div>
+                                <Sparkles className="w-4 h-4 text-[var(--gold-500)]/30 group-hover:text-[var(--gold-400)]/50 transition-colors mb-1" />
+                              </div>
+
+                              {/* Campaign name */}
+                              <p className="text-[9px] text-[var(--text-muted)] truncate border-t border-[var(--border-subtle)]/40 pt-2">{rule.name}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 border border-dashed border-[var(--border-subtle)] rounded-xl flex flex-col items-center gap-2">
+                        <Sparkles className="w-6 h-6 text-[var(--text-muted)]/40" />
+                        <p className="text-xs text-[var(--text-muted)]">Nenhuma promoção ativa no momento.</p>
+                        <p className="text-[10px] text-[var(--text-muted)]/60">Crie regras na seção "Regras Comerciais de Promoção" abaixo.</p>
+                      </div>
+                    )}
+
+                    {/* Footer stats */}
+                    {activeRules.length > 0 && (
+                      <div className="flex items-center justify-between gap-3 pt-3 border-t border-[var(--border-subtle)]/50">
+                        <p className="text-[9px] text-[var(--text-muted)] truncate">
+                          Categorias: <span className="text-[var(--text-secondary)] font-semibold">{[...new Set(activeRules.map(r => r.clientCategory))].join(", ")}</span>
+                        </p>
+                        <span className="text-[9px] font-bold font-mono text-emerald-400 shrink-0">
+                          até {Math.max(...activeRules.map(r => r.discount))}% desc
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Regras Comerciais de Promoção */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h5 className="font-bold text-[var(--gold-300)] flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      Visualização do Pacote Premium (Combo)
-                    </h5>
-                    <p className="text-[10px] text-[var(--text-secondary)] mt-1 max-w-md">
-                      Quando o lead contrata Buffet + Decoração + Fotografia simultaneamente, o CRM calcula e expõe visualmente a economia total no resumo orçamentário.
-                    </p>
+                    <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+                      <Tag className="w-3.5 h-3.5 text-[var(--gold-400)]" />
+                      Regras Comerciais de Promoção
+                    </h4>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Descontos automáticos por categoria de cliente e combinação de serviços.</p>
                   </div>
-                  <span className="text-[9px] font-bold px-3 py-1.5 rounded-full border border-emerald-500/30 text-emerald-400 bg-emerald-500/5 font-mono">
-                    Valor Final: -10% automático
-                  </span>
+                  <button
+                    onClick={openNewRuleForm}
+                    className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold text-[var(--gold-300)] border border-[var(--gold-500)]/30 bg-[var(--gold-500)]/10 hover:bg-[var(--gold-500)]/20 rounded-lg transition-all cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Nova Regra
+                  </button>
                 </div>
+
+                {/* Inline Form */}
+                {showRuleForm && (
+                  <div className="p-5 rounded-xl bg-[var(--bg-input)] border border-[var(--gold-500)]/20 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-[var(--text-primary)]">{editingRuleId ? "Editar Regra Comercial" : "Nova Regra Comercial"}</p>
+                      <button onClick={cancelRuleForm} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer transition-colors"><X className="w-4 h-4" /></button>
+                    </div>
+
+                    {/* Nome */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome da Campanha *</label>
+                      <input
+                        type="text"
+                        value={ruleFormName}
+                        onChange={e => setRuleFormName(e.target.value)}
+                        placeholder="Ex: Especial Verão – Novos Clientes"
+                        className="bg-[var(--bg-card)] border border-[var(--border-default)] focus:border-[var(--gold-400)] focus:outline-none rounded-lg p-2.5 text-xs text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-muted)]"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Categoria */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Categoria do Cliente *</label>
+                        <div className="flex flex-col gap-1.5">
+                          {(["Cliente Novo", "Cliente Prime", "Cliente VIP"] as ClientCategoryOption[]).map(cat => (
+                            <button
+                              key={cat}
+                              onClick={() => setRuleFormCategory(cat)}
+                              className={`text-left px-3 py-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${ruleFormCategory === cat ? CATEGORY_BADGE_STYLE[cat] : "text-[var(--text-muted)] border-[var(--border-default)] bg-[var(--bg-card)] hover:border-[var(--border-default)]"}`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Serviços */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Serviços do Combo *</label>
+                        <div className="flex flex-col gap-1.5">
+                          {(["Buffet", "Decoração", "Fotografia"] as ServiceOption[]).map(svc => (
+                            <button
+                              key={svc}
+                              onClick={() => toggleRuleService(svc)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${ruleFormServices.includes(svc) ? SERVICE_BADGE_STYLE[svc] : "text-[var(--text-muted)] border-[var(--border-default)] bg-[var(--bg-card)]"}`}
+                            >
+                              <span className={`w-3 h-3 rounded border flex items-center justify-center shrink-0 ${ruleFormServices.includes(svc) ? "border-current bg-current/20" : "border-[var(--border-default)]"}`}>
+                                {ruleFormServices.includes(svc) && <Check className="w-2 h-2" />}
+                              </span>
+                              {svc}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Desconto */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Percentual de Desconto *</label>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min={1}
+                              max={100}
+                              value={ruleFormDiscount}
+                              onChange={e => setRuleFormDiscount(Math.max(1, Math.min(100, Number(e.target.value))))}
+                              className="w-16 bg-[var(--bg-card)] border border-[var(--border-default)] focus:border-[var(--gold-400)] focus:outline-none rounded-lg p-2 text-xs text-[var(--text-primary)] font-mono text-center transition-colors"
+                            />
+                            <span className="text-sm font-bold text-[var(--text-secondary)]">%</span>
+                          </div>
+                          <div className="flex gap-1">
+                            {[5, 10, 15, 20].map(v => (
+                              <button key={v} onClick={() => setRuleFormDiscount(v)} className={`px-2 py-1 rounded text-[9px] font-bold border transition-all cursor-pointer ${ruleFormDiscount === v ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" : "text-[var(--text-muted)] border-[var(--border-default)] bg-[var(--bg-card)] hover:border-emerald-500/20"}`}>{v}%</button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Status da Regra</label>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <button
+                            onClick={() => setRuleFormActive(!ruleFormActive)}
+                            className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${ruleFormActive ? "bg-emerald-500" : "bg-neutral-700"}`}
+                          >
+                            <div className={`bg-white w-4 h-4 rounded-full transition-transform ${ruleFormActive ? "translate-x-4" : "translate-x-0"}`} />
+                          </button>
+                          <span className={`text-xs font-bold ${ruleFormActive ? "text-emerald-400" : "text-[var(--text-muted)]"}`}>{ruleFormActive ? "Ativa" : "Inativa"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Observações */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Observações</label>
+                      <input
+                        type="text"
+                        value={ruleFormObservations}
+                        onChange={e => setRuleFormObservations(e.target.value)}
+                        placeholder="Informações adicionais sobre esta regra..."
+                        className="bg-[var(--bg-card)] border border-[var(--border-default)] focus:border-[var(--gold-400)] focus:outline-none rounded-lg p-2.5 text-xs text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-muted)]"
+                      />
+                    </div>
+
+                    {/* Form Actions */}
+                    <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border-subtle)]">
+                      <button onClick={cancelRuleForm} className="px-4 py-2 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)] rounded-lg transition-all cursor-pointer">Cancelar</button>
+                      <button
+                        onClick={handleSaveRule}
+                        disabled={!ruleFormName.trim() || ruleFormServices.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Save className="w-3.5 h-3.5 stroke-[3]" />
+                        {editingRuleId ? "Salvar Alterações" : "Criar Regra"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Rules List */}
+                {promotionRules.length > 0 ? (
+                  <div className="space-y-2">
+                    {promotionRules.map(rule => (
+                      <div
+                        key={rule.id}
+                        className={`p-3.5 rounded-xl border transition-all ${rule.active ? "bg-[var(--bg-secondary)] border-[var(--border-subtle)]" : "bg-[var(--bg-secondary)]/50 border-[var(--border-subtle)]/40 opacity-55"}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-[var(--text-primary)]">{rule.name}</span>
+                              {!rule.active && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded border border-neutral-600/50 text-neutral-500 bg-neutral-800/50 uppercase tracking-wide">inativa</span>}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border ${CATEGORY_BADGE_STYLE[rule.clientCategory]}`}>{rule.clientCategory}</span>
+                              <span className="text-[var(--text-muted)] text-[9px] font-bold">+</span>
+                              {rule.services.map(svc => (
+                                <span key={svc} className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border ${SERVICE_BADGE_STYLE[svc]}`}>{svc}</span>
+                              ))}
+                              <span className="text-[var(--text-muted)] text-[9px] font-bold">=</span>
+                              <span className="text-xs font-bold font-mono text-emerald-400">{rule.discount}% desc</span>
+                            </div>
+                            {rule.observations && <p className="text-[9px] text-[var(--text-muted)] mt-1 leading-relaxed">{rule.observations}</p>}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                            <button onClick={() => openEditRuleForm(rule)} className="p-1.5 rounded-lg hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all cursor-pointer" title="Editar">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => toggleRuleActive(rule.id)} className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${rule.active ? "bg-emerald-500" : "bg-neutral-700"}`} title={rule.active ? "Desativar" : "Ativar"}>
+                              <div className={`bg-white w-4 h-4 rounded-full transition-transform ${rule.active ? "translate-x-4" : "translate-x-0"}`} />
+                            </button>
+                            <button onClick={() => deleteRule(rule.id)} className="p-1.5 rounded-lg hover:bg-rose-500/10 text-[var(--text-muted)] hover:text-rose-400 transition-all cursor-pointer" title="Excluir">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-[var(--text-muted)] text-xs border border-dashed border-[var(--border-subtle)] rounded-xl">
+                    Nenhuma regra criada. Clique em "Nova Regra" para começar.
+                  </div>
+                )}
               </div>
 
               {/* Save button */}
               <div className="mt-auto pt-6 border-t border-[var(--border-subtle)] flex justify-end">
-                <button 
+                <button
                   onClick={() => handleSave("Serviços & Combos")}
                   className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                 >
@@ -801,6 +1139,270 @@ export default function ConfiguacoesPage() {
               <div className="mt-auto pt-6 border-t border-[var(--border-subtle)] flex justify-end">
                 <button 
                   onClick={() => handleSave("Visual & Temas")}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                >
+                  <Save className="w-4 h-4 text-black stroke-[3]" />
+                  Salvar Configurações
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: CLIENTES & CATEGORIAS */}
+          {activeTab === "clientes" && (
+            <div className="flex flex-col gap-6 flex-1">
+              <div>
+                <h3 className="text-base font-bold text-[var(--text-primary)]">Categorias de Clientes</h3>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">Configure os critérios, benefícios e prioridades de cada perfil de cliente no CRM.</p>
+              </div>
+
+              {/* Future integration banner */}
+              <div className="p-3.5 rounded-xl flex items-start gap-3 border border-dashed border-[var(--gold-500)]/25 bg-[var(--gold-500)]/5">
+                <Sparkles className="w-4 h-4 text-[var(--gold-400)] shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-[var(--gold-300)]">Preparado para integração futura</p>
+                  <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-relaxed">
+                    Essas categorias serão aplicadas automaticamente em: <span className="text-[var(--text-secondary)] font-semibold">Clientes</span>, <span className="text-[var(--text-secondary)] font-semibold">Painel de Clientes</span>, <span className="text-[var(--text-secondary)] font-semibold">Propostas</span> e <span className="text-[var(--text-secondary)] font-semibold">IA Comercial</span>.
+                  </p>
+                </div>
+                <span className="shrink-0 text-[8px] font-bold px-2 py-0.5 rounded-full border border-[var(--gold-500)]/30 text-[var(--gold-300)] bg-[var(--gold-500)]/10 uppercase tracking-wide font-mono whitespace-nowrap">
+                  Mock Visual
+                </span>
+              </div>
+
+              {/* Category Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+                {/* ── Cliente Novo ── */}
+                <div className="flex flex-col rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden">
+                  {/* Card header strip */}
+                  <div className="h-1 w-full bg-gradient-to-r from-neutral-500/60 to-transparent" />
+                  <div className="p-4 flex flex-col gap-4 flex-1">
+                    {/* Badge preview */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-neutral-800/60 border border-neutral-700/40">
+                          <Star className="w-4 h-4 text-neutral-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-[var(--text-primary)]">Cliente Novo</p>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border text-neutral-400 border-neutral-600/50 bg-neutral-800/50">
+                            <Star className="w-2.5 h-2.5" />
+                            NOVO
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-[9px] text-neutral-500 font-bold uppercase tracking-wider">
+                        <span className="w-2 h-2 rounded-full bg-neutral-500" />
+                        Cinza
+                      </div>
+                    </div>
+
+                    {/* Fields */}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Critério de Classificação</label>
+                        <textarea
+                          rows={2}
+                          value={criterioNovo}
+                          onChange={(e) => setCriterioNovo(e.target.value)}
+                          className="bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-neutral-500 focus:outline-none rounded-lg p-2 text-[10px] text-[var(--text-primary)] transition-colors resize-none leading-relaxed"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Prioridade Comercial</label>
+                        <div className="flex gap-1">
+                          {(["Normal", "Alta", "Máxima"] as const).map((p) => (
+                            <button
+                              key={p}
+                              onClick={() => setPrioridadeNovo(p)}
+                              className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all cursor-pointer border ${
+                                prioridadeNovo === p
+                                  ? "bg-neutral-700 text-neutral-200 border-neutral-500"
+                                  : "bg-[var(--bg-input)] text-[var(--text-muted)] border-[var(--border-default)] hover:border-neutral-600"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Cliente Prime ── */}
+                <div className="flex flex-col rounded-xl border border-blue-500/20 bg-[var(--bg-secondary)] overflow-hidden shadow-[0_0_12px_rgba(59,130,246,0.04)]">
+                  <div className="h-1 w-full bg-gradient-to-r from-blue-500/60 to-transparent" />
+                  <div className="p-4 flex flex-col gap-4 flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                          <Gem className="w-4 h-4 text-blue-300" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-[var(--text-primary)]">Cliente Prime</p>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border text-blue-300 border-blue-500/40 bg-blue-500/10">
+                            <Gem className="w-2.5 h-2.5" />
+                            PRIME
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-[9px] text-blue-400 font-bold uppercase tracking-wider">
+                        <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        Azul
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Critério de Classificação</label>
+                        <textarea
+                          rows={2}
+                          value={criterioPrime}
+                          onChange={(e) => setCriterioPrime(e.target.value)}
+                          className="bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-blue-500/50 focus:outline-none rounded-lg p-2 text-[10px] text-[var(--text-primary)] transition-colors resize-none leading-relaxed"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Prioridade Comercial</label>
+                        <div className="flex gap-1">
+                          {(["Normal", "Alta", "Máxima"] as const).map((p) => (
+                            <button
+                              key={p}
+                              onClick={() => setPrioridadePrime(p)}
+                              className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all cursor-pointer border ${
+                                prioridadePrime === p
+                                  ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
+                                  : "bg-[var(--bg-input)] text-[var(--text-muted)] border-[var(--border-default)] hover:border-blue-500/30"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Cliente VIP ── */}
+                <div className="flex flex-col rounded-xl border border-[var(--gold-500)]/30 bg-[var(--bg-secondary)] overflow-hidden shadow-[0_0_16px_rgba(212,169,55,0.06)]">
+                  <div className="h-1 w-full bg-gradient-to-r from-[var(--gold-500)]/80 to-transparent" />
+                  <div className="p-4 flex flex-col gap-4 flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-[var(--gold-500)]/10 border border-[var(--gold-500)]/25">
+                          <Crown className="w-4 h-4 text-[var(--gold-300)]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-[var(--text-primary)]">Cliente VIP</p>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border text-[var(--gold-300)] border-[var(--gold-500)]/40 bg-[var(--gold-500)]/10">
+                            <Crown className="w-2.5 h-2.5" />
+                            VIP
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-[9px] text-[var(--gold-400)] font-bold uppercase tracking-wider">
+                        <span className="w-2 h-2 rounded-full bg-[var(--gold-400)]" />
+                        Dourado
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Critério de Classificação</label>
+                        <textarea
+                          rows={2}
+                          value={criterioVip}
+                          onChange={(e) => setCriterioVip(e.target.value)}
+                          className="bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[var(--gold-500)]/40 focus:outline-none rounded-lg p-2 text-[10px] text-[var(--text-primary)] transition-colors resize-none leading-relaxed"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Prioridade Comercial</label>
+                        <div className="flex gap-1">
+                          {(["Normal", "Alta", "Máxima"] as const).map((p) => (
+                            <button
+                              key={p}
+                              onClick={() => setPrioridadeVip(p)}
+                              className={`flex-1 py-1.5 rounded-lg text-[9px] font-bold transition-all cursor-pointer border ${
+                                prioridadeVip === p
+                                  ? "bg-[var(--gold-500)]/15 text-[var(--gold-300)] border-[var(--gold-500)]/35"
+                                  : "bg-[var(--bg-input)] text-[var(--text-muted)] border-[var(--border-default)] hover:border-[var(--gold-500)]/20"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Promoções Aplicadas por Categoria */}
+              <div className="space-y-3">
+                <div>
+                  <h4 className="text-xs font-bold text-[var(--gold-300)] uppercase tracking-wider flex items-center gap-2">
+                    <Tag className="w-3.5 h-3.5" />
+                    Promoções Ativas por Categoria
+                  </h4>
+                  <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                    Reflexo das regras ativas configuradas em <span className="text-[var(--text-secondary)] font-semibold">Serviços & Combo</span>.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {(["Cliente Novo", "Cliente Prime", "Cliente VIP"] as ClientCategoryOption[]).map(cat => {
+                    const activeRules = getActiveRulesForCategory(cat);
+                    const headerColors: Record<ClientCategoryOption, string> = {
+                      "Cliente Novo": "from-neutral-500/40",
+                      "Cliente Prime": "from-blue-500/40",
+                      "Cliente VIP": "from-[var(--gold-500)]/60",
+                    };
+                    return (
+                      <div key={cat} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden">
+                        <div className={`h-0.5 w-full bg-gradient-to-r ${headerColors[cat]} to-transparent`} />
+                        <div className="p-3">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border mb-2 ${CATEGORY_BADGE_STYLE[cat]}`}>{cat}</span>
+                          {activeRules.length === 0 ? (
+                            <p className="text-[9px] text-[var(--text-muted)] italic">Nenhuma promoção ativa.</p>
+                          ) : (
+                            <ul className="space-y-1">
+                              {activeRules.map(r => (
+                                <li key={r.id} className="flex items-center gap-1.5 text-[9px]">
+                                  <span className="text-emerald-400 font-bold font-mono shrink-0">{r.discount}%</span>
+                                  <span className="text-[var(--text-secondary)]">{r.services.join(" + ")}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Integration roadmap note */}
+              <div className="p-4 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl flex items-start gap-2.5">
+                <ArrowUpRight className="w-4 h-4 text-[var(--gold-400)] shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-[var(--text-primary)]">Evolução futura das categorias</p>
+                  <ul className="mt-1.5 space-y-1 text-[10px] text-[var(--text-muted)] leading-relaxed">
+                    <li><span className="text-neutral-400 font-semibold">Cliente Novo →</span> classificado automaticamente ao cadastrar um cliente pela primeira vez.</li>
+                    <li><span className="text-blue-400 font-semibold">Cliente Prime →</span> promovido automaticamente após a 2ª contratação confirmada.</li>
+                    <li><span className="text-[var(--gold-400)] font-semibold">Cliente VIP →</span> definido manualmente ou por IA com base em ticket, frequência e indicações.</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Save button */}
+              <div className="mt-auto pt-6 border-t border-[var(--border-subtle)] flex justify-end">
+                <button
+                  onClick={() => handleSave("Clientes & Categorias")}
                   className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                 >
                   <Save className="w-4 h-4 text-black stroke-[3]" />
