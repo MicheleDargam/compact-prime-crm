@@ -1,72 +1,91 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Lock, Mail, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        router.push("/");
+      } else {
+        setError(data.error ?? "Erro ao autenticar.");
+      }
+    } catch {
+      setError("Erro de conexão. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[var(--bg-primary)] overflow-hidden">
-      
-      {/* Lado Esquerdo: Branding / Visual (Oculto em telas pequenas se preferir, ou apenas empilhado) */}
+
+      {/* Lado Esquerdo: Branding / Visual */}
       <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-12 overflow-hidden border-r border-[var(--border-subtle)]">
-        {/* Background cinemático com gradiente e glow dourado */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0e] via-[#111117] to-[#0a0a0e] z-0" />
-        
-        {/* Glow Effects */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[var(--gold-500)]/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[var(--gold-400)]/10 rounded-full blur-[120px] pointer-events-none" />
-        
-        {/* Overlay pontilhado para textura (opcional) */}
         <div className="absolute inset-0 opacity-[0.03] z-0" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
 
-        {/* Conteúdo Institucional */}
         <div className="relative z-10 flex flex-col items-center text-center max-w-lg mx-auto animate-fade-in-up">
-          {/* Logo */}
           <div className="mb-6 relative group">
-            {/* Glow sutil atrás da logo transparente */}
             <div className="absolute inset-0 bg-[var(--gold-500)]/10 blur-2xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-            <img 
-              src="/logo-compact.png" 
-              alt="Compact Prime Logo" 
+            <img
+              src="/logo-compact.png"
+              alt="Compact Prime Logo"
               className="w-64 md:w-72 h-auto object-contain drop-shadow-[0_0_15px_rgba(212,169,55,0.3)] relative z-10"
               onError={(e) => {
-                // Fallback visual caso a imagem não tenha sido salva
-                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).style.display = "none";
                 e.currentTarget.parentElement!.innerHTML = '<div class="text-[var(--gold-300)] font-bold text-3xl tracking-widest uppercase relative z-10">CP</div>';
               }}
             />
           </div>
-          
+
           <h1 className="text-4xl font-bold text-white tracking-tight mb-4">
             Compact Prime <span className="text-[var(--gold-300)]">CRM</span>
           </h1>
-          
+
           <p className="text-xl font-light text-[var(--text-secondary)] italic mb-6">
             "Qualidade que encanta, sabor que marca"
           </p>
-          
+
           <div className="h-px w-24 bg-gradient-to-r from-transparent via-[var(--gold-400)] to-transparent mx-auto mb-6 opacity-50" />
-          
+
           <p className="text-[var(--text-muted)] text-lg">
             Gestão inteligente para eventos memoráveis.
           </p>
         </div>
       </div>
 
-      {/* Lado Direito: Formulário de Acesso */}
+      {/* Lado Direito: Formulário */}
       <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 z-10 bg-[var(--bg-primary)] lg:bg-transparent">
-        
-        {/* Versão Mobile da Logo */}
+
+        {/* Mobile Logo */}
         <div className="lg:hidden flex flex-col items-center mb-8 animate-fade-in-up">
           <div className="relative">
             <div className="absolute inset-0 bg-[var(--gold-500)]/10 blur-xl rounded-full opacity-50 pointer-events-none" />
-            <img 
-              src="/logo-compact.png" 
-              alt="Compact Prime Logo" 
+            <img
+              src="/logo-compact.png"
+              alt="Compact Prime Logo"
               className="w-48 sm:w-56 h-auto object-contain mb-4 drop-shadow-[0_0_15px_rgba(212,169,55,0.3)] relative z-10"
               onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).style.display = "none";
                 e.currentTarget.parentElement!.innerHTML = '<div class="w-16 h-16 rounded-xl bg-gradient-to-br from-[var(--gold-300)] to-[var(--gold-600)] flex items-center justify-center text-black font-bold text-xl mb-4 relative z-10">CP</div>';
               }}
             />
@@ -83,9 +102,9 @@ export default function LoginPage() {
             <p className="text-sm text-[var(--text-muted)] mt-1">Insira suas credenciais para gerenciar a operação.</p>
           </div>
 
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
-            
-            {/* Input Email */}
+          <form className="space-y-5" onSubmit={handleSubmit}>
+
+            {/* Input Email (visual) */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[var(--text-secondary)]" htmlFor="email">
                 E-mail Corporativo
@@ -99,7 +118,6 @@ export default function LoginPage() {
                   type="email"
                   placeholder="admin@compactprime.com"
                   className="block w-full pl-11 pr-4 py-3 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--gold-400)] focus:border-[var(--gold-400)] transition-colors"
-                  required
                 />
               </div>
             </div>
@@ -117,11 +135,20 @@ export default function LoginPage() {
                   id="password"
                   type="password"
                   placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="block w-full pl-11 pr-4 py-3 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--gold-400)] focus:border-[var(--gold-400)] transition-colors"
                   required
                 />
               </div>
             </div>
+
+            {/* Erro */}
+            {error && (
+              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
 
             {/* Remember me & Forgot Password */}
             <div className="flex items-center justify-between pt-1">
@@ -144,19 +171,18 @@ export default function LoginPage() {
               </a>
             </div>
 
-            {/* Submit Button (Mock -> Dashboard) */}
+            {/* Submit */}
             <div className="pt-4">
-              <Link href="/">
-                <button 
-                  type="button"
-                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] text-[var(--bg-primary)] font-bold rounded-xl shadow-[var(--shadow-gold-glow)] hover:scale-[1.02] hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[var(--gold-300)] focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)]"
-                >
-                  Entrar
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              </Link>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] text-[var(--bg-primary)] font-bold rounded-xl shadow-[var(--shadow-gold-glow)] hover:scale-[1.02] hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[var(--gold-300)] focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)] disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
+              >
+                {loading ? "Verificando..." : "Entrar"}
+                {!loading && <ArrowRight className="w-5 h-5" />}
+              </button>
             </div>
-            
+
           </form>
 
           {/* Footer Card */}

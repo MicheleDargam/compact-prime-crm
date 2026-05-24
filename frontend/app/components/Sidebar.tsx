@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type NavItem = { label: string; icon: string; href: string };
 
@@ -41,6 +41,7 @@ function Icon({ name, className = "w-5 h-5" }: { name: string; className?: strin
       "M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z",
     menu: "M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5",
     close: "M6 18L18 6M6 6l12 12",
+    logout: "M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75",
   };
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -52,6 +53,12 @@ function Icon({ name, className = "w-5 h-5" }: { name: string; className?: strin
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/logout", { method: "POST" });
+    router.push("/login");
+  }
 
   if (pathname === "/login") return null;
 
@@ -122,11 +129,19 @@ export default function Sidebar() {
           <div className="px-5 pb-6">
             <div className="h-px mb-4" style={{ background: "var(--border-subtle)" }} />
             <div className="flex items-center gap-3 px-1">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: "var(--gold-500)", color: "#000" }}>CP</div>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0" style={{ background: "var(--gold-500)", color: "#000" }}>CP</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>Admin</p>
                 <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>admin@compactprime.com</p>
               </div>
+              <button
+                onClick={handleLogout}
+                title="Sair"
+                className="flex-shrink-0 p-1.5 rounded-lg transition-colors hover:bg-white/[0.06] cursor-pointer"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <Icon name="logout" className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
