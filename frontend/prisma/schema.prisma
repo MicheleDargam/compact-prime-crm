@@ -1,0 +1,412 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  // output relativo a frontend/prisma/ → gera em frontend/generated/prisma/
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model categorias_cliente {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome              String              @db.VarChar(100)
+  descricao         String?
+  criterio          String?
+  prioridade        Int                 @default(0) @db.SmallInt
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  deleted_at        DateTime?           @db.Timestamptz(6)
+  clientes          clientes[]
+  regras_comerciais regras_comerciais[]
+
+  @@index([deleted_at], map: "idx_cat_cliente_ativo", where: raw("(deleted_at IS NULL)"))
+  @@index([prioridade], map: "idx_cat_cliente_prioridade")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model cliente_telefones {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cliente_id String   @unique(map: "uq_telefone_principal", where: raw("(principal = true)")) @db.Uuid
+  tipo       String   @default("celular") @db.VarChar(20)
+  numero     String   @db.VarChar(20)
+  principal  Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  clientes   clientes @relation(fields: [cliente_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([cliente_id], map: "idx_tel_cliente")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model clientes {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoria_cliente_id String             @db.Uuid
+  nome                 String             @db.VarChar(200)
+  cpf                  String?            @unique @db.Char(11)
+  rg                   String?            @db.VarChar(20)
+  email                String?            @db.VarChar(254)
+  endereco             String?
+  origem               String?            @db.VarChar(100)
+  observacoes          String?
+  created_at           DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime           @default(now()) @db.Timestamptz(6)
+  deleted_at           DateTime?          @db.Timestamptz(6)
+  cliente_telefones    cliente_telefones?
+  categorias_cliente   categorias_cliente @relation(fields: [categoria_cliente_id], references: [id], onUpdate: NoAction)
+  contratos            contratos[]
+  eventos              eventos[]
+  pagamentos           pagamentos[]
+  propostas            propostas[]
+
+  @@index([deleted_at], map: "idx_clientes_ativo", where: raw("(deleted_at IS NULL)"))
+  @@index([categoria_cliente_id], map: "idx_clientes_categoria")
+  @@index([email], map: "idx_clientes_email", where: raw("(email IS NOT NULL)"))
+  @@index([nome], map: "idx_clientes_nome")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model combo_servicos {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  combo_id   String   @db.Uuid
+  servico_id String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  combos     combos   @relation(fields: [combo_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  servicos   servicos @relation(fields: [servico_id], references: [id], onUpdate: NoAction)
+
+  @@unique([combo_id, servico_id], map: "uq_combo_servico")
+  @@index([combo_id], map: "idx_combo_serv_combo")
+  @@index([servico_id], map: "idx_combo_serv_servico")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model combos {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome              String              @db.VarChar(150)
+  descricao         String?
+  ativo             Boolean             @default(true)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  combo_servicos    combo_servicos[]
+  regras_comerciais regras_comerciais[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model contratos {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  proposta_id     String       @unique @db.Uuid
+  cliente_id      String       @db.Uuid
+  evento_id       String       @db.Uuid
+  numero_contrato String       @unique @db.VarChar(50)
+  status          String       @default("aguardando_assinatura") @db.VarChar(30)
+  data_assinatura DateTime?    @db.Date
+  pdf_url         String?
+  observacoes     String?
+  created_at      DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime     @default(now()) @db.Timestamptz(6)
+  clientes        clientes     @relation(fields: [cliente_id], references: [id], onUpdate: NoAction)
+  eventos         eventos      @relation(fields: [evento_id], references: [id], onUpdate: NoAction)
+  propostas       propostas    @relation(fields: [proposta_id], references: [id], onUpdate: NoAction)
+  pagamentos      pagamentos[]
+
+  @@index([created_at], map: "idx_contratos_aguardando", where: raw("((status)::text = 'aguardando_assinatura'::text)"))
+  @@index([cliente_id], map: "idx_contratos_cliente")
+  @@index([evento_id], map: "idx_contratos_evento")
+  @@index([status], map: "idx_contratos_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model despesas_buffet {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evento_id       String?  @db.Uuid
+  categoria       String   @db.VarChar(50)
+  descricao       String   @db.VarChar(300)
+  fornecedor      String?  @db.VarChar(200)
+  valor           Decimal  @db.Decimal(12, 2)
+  forma_pagamento String   @db.VarChar(20)
+  comprovante_url String?
+  observacoes     String?
+  data_despesa    DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+  eventos         eventos? @relation(fields: [evento_id], references: [id], onUpdate: NoAction)
+
+  @@index([categoria], map: "idx_desp_categoria")
+  @@index([categoria, data_despesa], map: "idx_desp_categoria_data")
+  @@index([data_despesa], map: "idx_desp_data")
+  @@index([evento_id], map: "idx_desp_evento", where: raw("(evento_id IS NOT NULL)"))
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model evento_funcionarios {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evento_id        String       @db.Uuid
+  funcionario_id   String       @db.Uuid
+  funcao_evento    String       @db.VarChar(100)
+  valor_pago       Decimal      @db.Decimal(10, 2)
+  status_pagamento String       @default("pendente") @db.VarChar(20)
+  observacoes      String?
+  created_at       DateTime     @default(now()) @db.Timestamptz(6)
+  eventos          eventos      @relation(fields: [evento_id], references: [id], onUpdate: NoAction)
+  funcionarios     funcionarios @relation(fields: [funcionario_id], references: [id], onUpdate: NoAction)
+
+  @@unique([evento_id, funcionario_id], map: "uq_evento_funcionario")
+  @@index([evento_id], map: "idx_evt_func_evento")
+  @@index([funcionario_id], map: "idx_evt_func_funcionario")
+  @@index([status_pagamento], map: "idx_evt_func_pendente", where: raw("((status_pagamento)::text = 'pendente'::text)"))
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model evento_servicos {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evento_id         String   @db.Uuid
+  servico_id        String   @db.Uuid
+  valor_estimado    Decimal  @default(0.00) @db.Decimal(12, 2)
+  desconto_aplicado Decimal  @default(0.00) @db.Decimal(5, 2)
+  valor_contratado  Decimal? @db.Decimal(12, 2)
+  observacoes       String?
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @default(now()) @db.Timestamptz(6)
+  eventos           eventos  @relation(fields: [evento_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  servicos          servicos @relation(fields: [servico_id], references: [id], onUpdate: NoAction)
+
+  @@unique([evento_id, servico_id], map: "uq_evento_servico")
+  @@index([evento_id], map: "idx_evt_serv_evento")
+  @@index([servico_id], map: "idx_evt_serv_servico")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model evento_status_historico {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evento_id    String   @db.Uuid
+  status_de    String?  @db.VarChar(50)
+  status_para  String   @db.VarChar(50)
+  alterado_por String?  @db.VarChar(200)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  eventos      eventos  @relation(fields: [evento_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at], map: "idx_evt_status_hist_data")
+  @@index([evento_id], map: "idx_evt_status_hist_evento")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model eventos {
+  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cliente_id              String                    @db.Uuid
+  tipo_evento             String                    @db.VarChar(100)
+  nome_evento             String                    @db.VarChar(200)
+  data_evento             DateTime?                 @db.Date
+  horario                 DateTime?                 @db.Time(6)
+  local_evento            String?
+  quantidade_convidados   Int?
+  status                  String                    @default("lead") @db.VarChar(50)
+  observacoes             String?
+  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  deleted_at              DateTime?                 @db.Timestamptz(6)
+  contratos               contratos[]
+  despesas_buffet         despesas_buffet[]
+  evento_funcionarios     evento_funcionarios[]
+  evento_servicos         evento_servicos[]
+  evento_status_historico evento_status_historico[]
+  clientes                clientes                  @relation(fields: [cliente_id], references: [id], onUpdate: NoAction)
+  pagamentos              pagamentos[]
+  propostas               propostas[]
+
+  @@index([deleted_at], map: "idx_eventos_ativo", where: raw("(deleted_at IS NULL)"))
+  @@index([cliente_id], map: "idx_eventos_cliente_id")
+  @@index([data_evento], map: "idx_eventos_data_evento", where: raw("(data_evento IS NOT NULL)"))
+  @@index([status], map: "idx_eventos_status")
+  @@index([status, data_evento], map: "idx_eventos_status_data", where: raw("(deleted_at IS NULL)"))
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model funcionarios {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                String                @db.VarChar(200)
+  cpf                 String?               @unique(map: "uq_funcionario_cpf") @db.Char(11)
+  telefone            String?               @db.VarChar(20)
+  email               String?               @db.VarChar(254)
+  funcao              String                @db.VarChar(100)
+  tipo_contratacao    String                @db.VarChar(20)
+  valor_diaria        Decimal?              @db.Decimal(10, 2)
+  ativo               Boolean               @default(true)
+  observacoes         String?
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime              @default(now()) @db.Timestamptz(6)
+  deleted_at          DateTime?             @db.Timestamptz(6)
+  evento_funcionarios evento_funcionarios[]
+
+  @@index([deleted_at], map: "idx_func_ativo", where: raw("(deleted_at IS NULL)"))
+  @@index([funcao], map: "idx_func_funcao")
+  @@index([nome], map: "idx_func_nome")
+  @@index([tipo_contratacao], map: "idx_func_tipo")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pagamentos {
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cliente_id      String     @db.Uuid
+  evento_id       String     @db.Uuid
+  contrato_id     String?    @db.Uuid
+  tipo_pagamento  String     @db.VarChar(30)
+  valor_total     Decimal    @db.Decimal(12, 2)
+  valor_recebido  Decimal    @default(0) @db.Decimal(12, 2)
+  status          String     @default("pendente") @db.VarChar(20)
+  forma_pagamento String     @db.VarChar(20)
+  observacoes     String?
+  comprovante_url String?
+  data_pagamento  DateTime?  @db.Date
+  created_at      DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime   @default(now()) @db.Timestamptz(6)
+  clientes        clientes   @relation(fields: [cliente_id], references: [id], onUpdate: NoAction)
+  contratos       contratos? @relation(fields: [contrato_id], references: [id], onUpdate: NoAction)
+  eventos         eventos    @relation(fields: [evento_id], references: [id], onUpdate: NoAction)
+  parcelas        parcelas[]
+  recibos         recibos[]
+
+  @@index([cliente_id], map: "idx_pag_cliente")
+  @@index([contrato_id], map: "idx_pag_contrato", where: raw("(contrato_id IS NOT NULL)"))
+  @@index([evento_id], map: "idx_pag_evento")
+  @@index([data_pagamento], map: "idx_pag_pendentes", where: raw("((status)::text = ANY ((ARRAY['pendente'::character varying, 'parcial'::character varying])::text[]))"))
+  @@index([status], map: "idx_pag_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model parcelas {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pagamento_id   String     @db.Uuid
+  numero_parcela Int        @db.SmallInt
+  valor_parcela  Decimal    @db.Decimal(12, 2)
+  vencimento     DateTime   @db.Date
+  status         String     @default("pendente") @db.VarChar(20)
+  data_pagamento DateTime?  @db.Date
+  observacoes    String?
+  created_at     DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime   @default(now()) @db.Timestamptz(6)
+  pagamentos     pagamentos @relation(fields: [pagamento_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([pagamento_id, numero_parcela], map: "uq_parcela_numero")
+  @@index([pagamento_id], map: "idx_parcelas_pagamento")
+  @@index([vencimento, status], map: "idx_parcelas_pendentes", where: raw("((status)::text = ANY ((ARRAY['pendente'::character varying, 'atrasado'::character varying])::text[]))"))
+  @@index([vencimento], map: "idx_parcelas_vencimento")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model proposta_servicos {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  proposta_id       String    @db.Uuid
+  servico_id        String    @db.Uuid
+  valor_original    Decimal   @db.Decimal(12, 2)
+  desconto_aplicado Decimal   @default(0) @db.Decimal(5, 2)
+  valor_final       Decimal   @db.Decimal(12, 2)
+  observacoes       String?
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  propostas         propostas @relation(fields: [proposta_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  servicos          servicos  @relation(fields: [servico_id], references: [id], onUpdate: NoAction)
+
+  @@unique([proposta_id, servico_id], map: "uq_proposta_servico")
+  @@index([proposta_id], map: "idx_prop_serv_proposta")
+  @@index([servico_id], map: "idx_prop_serv_servico")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model propostas {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cliente_id        String              @db.Uuid
+  evento_id         String              @db.Uuid
+  codigo_proposta   String              @unique @db.VarChar(50)
+  status            String              @default("rascunho") @db.VarChar(30)
+  validade_dias     Int                 @default(7) @db.SmallInt
+  valor_total       Decimal             @default(0) @db.Decimal(12, 2)
+  desconto_total    Decimal             @default(0) @db.Decimal(12, 2)
+  observacoes       String?
+  pdf_url           String?
+  enviada_em        DateTime?           @db.Timestamptz(6)
+  aprovada_em       DateTime?           @db.Timestamptz(6)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  deleted_at        DateTime?           @db.Timestamptz(6)
+  contratos         contratos?
+  proposta_servicos proposta_servicos[]
+  clientes          clientes            @relation(fields: [cliente_id], references: [id], onUpdate: NoAction)
+  eventos           eventos             @relation(fields: [evento_id], references: [id], onUpdate: NoAction)
+
+  @@index([deleted_at], map: "idx_propostas_ativo", where: raw("(deleted_at IS NULL)"))
+  @@index([cliente_id], map: "idx_propostas_cliente")
+  @@index([enviada_em], map: "idx_propostas_enviada_em", where: raw("((status)::text = 'enviada'::text)"))
+  @@index([evento_id], map: "idx_propostas_evento")
+  @@index([status], map: "idx_propostas_status")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model recibos {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pagamento_id  String     @db.Uuid
+  codigo_recibo String     @unique @db.VarChar(50)
+  pdf_url       String?
+  emitido_em    DateTime   @default(now()) @db.Timestamptz(6)
+  observacoes   String?
+  created_at    DateTime   @default(now()) @db.Timestamptz(6)
+  pagamentos    pagamentos @relation(fields: [pagamento_id], references: [id], onUpdate: NoAction)
+
+  @@index([emitido_em], map: "idx_recibos_emitido_em")
+  @@index([pagamento_id], map: "idx_recibos_pagamento")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model regras_comerciais {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoria_cliente_id String             @db.Uuid
+  combo_id             String?            @db.Uuid
+  nome_campanha        String             @db.VarChar(200)
+  percentual_desconto  Decimal            @default(0) @db.Decimal(5, 2)
+  status               String             @default("ativa") @db.VarChar(20)
+  data_inicio          DateTime?          @db.Date
+  data_fim             DateTime?          @db.Date
+  observacoes          String?
+  created_at           DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime           @default(now()) @db.Timestamptz(6)
+  categorias_cliente   categorias_cliente @relation(fields: [categoria_cliente_id], references: [id], onUpdate: NoAction)
+  combos               combos?            @relation(fields: [combo_id], references: [id], onUpdate: NoAction)
+
+  @@index([status, data_inicio, data_fim], map: "idx_regras_ativas_vigencia", where: raw("((status)::text = 'ativa'::text)"))
+  @@index([categoria_cliente_id], map: "idx_regras_categoria")
+  @@index([combo_id], map: "idx_regras_combo", where: raw("(combo_id IS NOT NULL)"))
+  @@index([status], map: "idx_regras_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model servicos {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome              String              @unique @db.VarChar(150)
+  tipo              String              @db.VarChar(50)
+  ativo             Boolean             @default(true)
+  descricao         String?
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  combo_servicos    combo_servicos[]
+  evento_servicos   evento_servicos[]
+  proposta_servicos proposta_servicos[]
+
+  @@index([ativo], map: "idx_servicos_ativo")
+  @@index([tipo], map: "idx_servicos_tipo")
+}
