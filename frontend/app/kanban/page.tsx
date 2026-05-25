@@ -31,6 +31,7 @@ export default function KanbanPage() {
   const [formEventType, setFormEventType] = useState<EventType>("Casamento");
   const [formEventDate, setFormEventDate] = useState("");
   const [formServicos, setFormServicos] = useState<ServiceType[]>([]);
+  const [formServicoDetails, setFormServicoDetails] = useState<Record<string, { valor: string; observacoes: string }>>({});
   const [formObservacoes, setFormObservacoes] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formCategory, setFormCategory] = useState<ClientCategory>("Cliente Novo");
@@ -49,9 +50,23 @@ export default function KanbanPage() {
   const resetForm = () => {
     setFormNome(""); setFormCpf(""); setFormTelefone(""); setFormEmail("");
     setFormEventType("Casamento"); setFormEventDate("");
-    setFormServicos([]); setFormObservacoes("");
+    setFormServicos([]); setFormServicoDetails({}); setFormObservacoes("");
     setFormCategory("Cliente Novo"); setFormError("");
   };
+
+  const updateServicoDetail = (tipo: string, field: "valor" | "observacoes", value: string) => {
+    setFormServicoDetails((prev) => ({
+      ...prev,
+      [tipo]: { ...(prev[tipo] ?? { valor: "", observacoes: "" }), [field]: value },
+    }));
+  };
+
+  function parseCurrency(val: string): number {
+    if (!val.trim()) return 0;
+    const clean = val.replace(/[R$\s]/g, "");
+    if (clean.includes(",")) return parseFloat(clean.replace(/\./g, "").replace(",", ".")) || 0;
+    return parseFloat(clean) || 0;
+  }
 
   const handleSaveLead = async () => {
     setFormSaving(true);
@@ -70,6 +85,12 @@ export default function KanbanPage() {
           tipoEvento: formEventType,
           dataEvento: formEventDate || null,
           servicos: formServicos,
+          servicoDetails: Object.fromEntries(
+            formServicos.map((tipo) => {
+              const d = formServicoDetails[tipo] ?? { valor: "", observacoes: "" };
+              return [tipo, { valorEstimado: parseCurrency(d.valor), observacoes: d.observacoes.trim() || null }];
+            })
+          ),
         }),
       });
       const data = await res.json();
@@ -320,6 +341,37 @@ export default function KanbanPage() {
                     </span>
                   </div>
                 )}
+                {formServicos.map((s) => {
+                  const cfg = SERVICES[s];
+                  const detail = formServicoDetails[s] ?? { valor: "", observacoes: "" };
+                  return (
+                    <div key={s} className="flex flex-col gap-2 p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)]">
+                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{cfg.label}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-[var(--text-muted)]">Valor estimado (R$)</label>
+                          <input
+                            type="text"
+                            placeholder="Ex: 2.500,00"
+                            value={detail.valor}
+                            onChange={(e) => updateServicoDetail(s, "valor", e.target.value)}
+                            className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-2.5 py-2 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-[var(--text-muted)]">Observação</label>
+                          <input
+                            type="text"
+                            placeholder="Ex: 5 horas, inclui bolo"
+                            value={detail.observacoes}
+                            onChange={(e) => updateServicoDetail(s, "observacoes", e.target.value)}
+                            className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-2.5 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Observações */}

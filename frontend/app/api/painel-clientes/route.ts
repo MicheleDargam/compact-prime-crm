@@ -111,6 +111,7 @@ export async function GET() {
 
     const servicosContratados: ServiceType[] = [];
     const valoresPorServico: { buffet?: number; decoracao?: number; fotografia?: number } = {};
+    const observacoesPorServico: Record<string, string | null> = {};
 
     for (const es of evento.evento_servicos) {
       const tipo = normalizeServiceType(es.servicos.tipo);
@@ -118,6 +119,7 @@ export async function GET() {
       if (!servicosContratados.includes(tipo)) servicosContratados.push(tipo);
       const cents = Math.round(Number(es.valor_estimado) * 100);
       valoresPorServico[tipo] = (valoresPorServico[tipo] ?? 0) + cents;
+      observacoesPorServico[tipo] = es.observacoes ?? null;
     }
 
     const subtotalCents = Object.values(valoresPorServico).reduce(
@@ -143,6 +145,7 @@ export async function GET() {
       notes: evento.observacoes ?? undefined,
       servicosContratados,
       valoresPorServico,
+      observacoesPorServico,
       descontoCombo,
       subtotalCents,
       totalCents,

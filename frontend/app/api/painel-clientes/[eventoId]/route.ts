@@ -139,7 +139,7 @@ export async function PUT(
     return NextResponse.json({ ok: false, error: "Requisição inválida." }, { status: 400 });
   }
 
-  const { nome, email, cpf, telefone, categoria, tipoEvento, dataEvento, observacoes, servicos } =
+  const { nome, email, cpf, telefone, categoria, tipoEvento, dataEvento, observacoes, servicos, servicoDetails } =
     body as Record<string, unknown>;
 
   if (!nome || typeof nome !== "string" || !nome.trim()) {
@@ -245,12 +245,22 @@ export async function PUT(
         },
       });
 
+      const detailsMap = servicoDetails && typeof servicoDetails === "object"
+        ? (servicoDetails as Record<string, { valorEstimado?: number; observacoes?: string | null }>)
+        : {};
+
       await tx.evento_servicos.deleteMany({ where: { evento_id: eventoId } });
       for (const svcType of servicosArray) {
         const match = servicosAtivos.find((s) => normalizeServiceType(s.tipo) === svcType);
         if (!match) continue;
+        const detail = detailsMap[svcType];
         await tx.evento_servicos.create({
-          data: { evento_id: eventoId, servico_id: match.id, valor_estimado: 0 },
+          data: {
+            evento_id: eventoId,
+            servico_id: match.id,
+            valor_estimado: detail?.valorEstimado ?? 0,
+            observacoes: detail?.observacoes ?? null,
+          },
         });
       }
     });

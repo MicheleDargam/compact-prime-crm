@@ -103,9 +103,13 @@ export function CardContent({ lead, columnColor, innerRef, style, attributes, li
         </div>
         <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-2">
           <div className="text-right">
-            <p className="text-xs font-bold font-mono" style={{ color: combo ? "var(--gold-300)" : "var(--text-primary)" }}>
-              {formatCurrency(lead.totalCents / 100)}
-            </p>
+            {lead.totalCents > 0 ? (
+              <p className="text-xs font-bold font-mono" style={{ color: combo ? "var(--gold-300)" : "var(--text-primary)" }}>
+                {formatCurrency(lead.totalCents / 100)}
+              </p>
+            ) : (
+              <p className="text-[10px] italic" style={{ color: "var(--text-muted)" }}>Valor não informado</p>
+            )}
             <p className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>Válido: {lead.validity}</p>
           </div>
           {onMenuClick && (

@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     return err("Requisição inválida: corpo JSON malformado.", "JSON parse error");
   }
 
-  const { nome, cpf, email, telefone, categoria, observacoes, tipoEvento, dataEvento, servicos } = body as Record<string, unknown>;
+  const { nome, cpf, email, telefone, categoria, observacoes, tipoEvento, dataEvento, servicos, servicoDetails } = body as Record<string, unknown>;
 
   // ── Validações de entrada ────────────────────────────────────────────────────
 
@@ -193,14 +193,24 @@ export async function POST(request: NextRequest) {
       });
 
       // 4. Vincular serviços ao evento
+      const detailsMap = servicoDetails && typeof servicoDetails === "object"
+        ? (servicoDetails as Record<string, { valorEstimado?: number; observacoes?: string | null }>)
+        : {};
+
       for (const svcType of servicosArray) {
         const match = servicosAtivos.find((s) => normalizeServiceType(s.tipo) === svcType);
         if (!match) {
           console.warn(`[POST /api/clientes] Serviço não encontrado para tipo: ${svcType}`);
           continue;
         }
+        const detail = detailsMap[svcType];
         await tx.evento_servicos.create({
-          data: { evento_id: evento.id, servico_id: match.id, valor_estimado: 0 },
+          data: {
+            evento_id: evento.id,
+            servico_id: match.id,
+            valor_estimado: detail?.valorEstimado ?? 0,
+            observacoes: detail?.observacoes ?? null,
+          },
         });
       }
 

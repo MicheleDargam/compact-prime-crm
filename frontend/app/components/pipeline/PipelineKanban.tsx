@@ -64,6 +64,11 @@ interface ActiveMenu {
   y: number;
 }
 
+interface ServicoDetail {
+  valor: string;
+  observacoes: string;
+}
+
 interface EditForm {
   nome: string;
   email: string;
@@ -72,6 +77,7 @@ interface EditForm {
   tipoEvento: string;
   dataEvento: string;
   servicos: string[];
+  servicoDetails: Record<string, ServicoDetail>;
   observacoes: string;
   categoria: string;
 }
@@ -119,8 +125,20 @@ function DropdownItem({
 
 const EDIT_FORM_DEFAULT: EditForm = {
   nome: "", email: "", cpf: "", telefone: "", tipoEvento: "Casamento",
-  dataEvento: "", servicos: [], observacoes: "", categoria: "Cliente Novo",
+  dataEvento: "", servicos: [], servicoDetails: {}, observacoes: "", categoria: "Cliente Novo",
 };
+
+function parseCurrency(val: string): number {
+  if (!val.trim()) return 0;
+  const clean = val.replace(/[R$\s]/g, "");
+  if (clean.includes(",")) return parseFloat(clean.replace(/\./g, "").replace(",", ".")) || 0;
+  return parseFloat(clean) || 0;
+}
+
+function formatForInput(cents: number): string {
+  if (!cents || cents === 0) return "";
+  return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
+}
 
 export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: PipelineKanbanProps) {
   const [data, setData] = useState<KanbanState>(EMPTY_STATE);
@@ -224,6 +242,12 @@ export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: 
   };
 
   const handleOpenEdit = (lead: Lead) => {
+    const servicoDetails: Record<string, ServicoDetail> = {};
+    for (const tipo of lead.servicosContratados) {
+      const valueCents = lead.valoresPorServico[tipo as keyof typeof lead.valoresPorServico] ?? 0;
+      const obs = lead.observacoesPorServico?.[tipo] ?? "";
+      servicoDetails[tipo] = { valor: formatForInput(valueCents), observacoes: obs ?? "" };
+    }
     setEditForm({
       nome: lead.name,
       email: lead.email ?? "",
@@ -232,6 +256,7 @@ export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: 
       tipoEvento: lead.eventType,
       dataEvento: lead.data_evento ?? "",
       servicos: [...lead.servicosContratados],
+      servicoDetails,
       observacoes: lead.notes ?? "",
       categoria: lead.clientCategory ?? "Cliente Novo",
     });
@@ -244,10 +269,16 @@ export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: 
     setEditLoading(true);
     setEditError("");
     try {
+      const servicoDetailsForApi = Object.fromEntries(
+        Object.entries(editForm.servicoDetails).map(([tipo, d]) => [
+          tipo,
+          { valorEstimado: parseCurrency(d.valor), observacoes: d.observacoes.trim() || null },
+        ])
+      );
       const res = await fetch(`/api/painel-clientes/${showEditModal.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({ ...editForm, servicoDetails: servicoDetailsForApi }),
       });
       const json = await res.json();
       if (json.ok) {
@@ -719,7 +750,7 @@ export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: 
                 </div>
               </div>
 
-              <div>
+              <div className="flex flex-col gap-2">
                 <label className={labelCls}>Serviços</label>
                 <div className="flex gap-3">
                   {SERVICE_OPTS.map(({ key, label }) => {
@@ -743,6 +774,43 @@ export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: 
                     );
                   })}
                 </div>
+                {editForm.servicos.map((svc) => {
+                  const svcLabel = SERVICE_OPTS.find((o) => o.key === svc)?.label ?? svc;
+                  const detail = editForm.servicoDetails[svc] ?? { valor: "", observacoes: "" };
+                  return (
+                    <div key={svc} className="flex flex-col gap-2 p-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]">
+                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{svcLabel}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] text-[var(--text-muted)]">Valor estimado (R$)</span>
+                          <input
+                            type="text"
+                            placeholder="Ex: 2.500,00"
+                            value={detail.valor}
+                            onChange={(e) => setEditForm((f) => ({
+                              ...f,
+                              servicoDetails: { ...f.servicoDetails, [svc]: { ...(f.servicoDetails[svc] ?? { valor: "", observacoes: "" }), valor: e.target.value } },
+                            }))}
+                            className={inputCls + " font-mono"}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] text-[var(--text-muted)]">Observação</span>
+                          <input
+                            type="text"
+                            placeholder="Ex: 5 horas, inclui bolo"
+                            value={detail.observacoes}
+                            onChange={(e) => setEditForm((f) => ({
+                              ...f,
+                              servicoDetails: { ...f.servicoDetails, [svc]: { ...(f.servicoDetails[svc] ?? { valor: "", observacoes: "" }), observacoes: e.target.value } },
+                            }))}
+                            className={inputCls}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <div>

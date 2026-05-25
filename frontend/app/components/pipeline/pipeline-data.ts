@@ -30,6 +30,7 @@ export interface Lead {
     decoracao?: number;
     fotografia?: number;
   };
+  observacoesPorServico?: Record<string, string | null>;
   descontoCombo: number;
   subtotalCents: number;
   totalCents: number;
