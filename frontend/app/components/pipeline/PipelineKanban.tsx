@@ -140,8 +140,23 @@ function formatForInput(cents: number): string {
   return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 }
 
+interface EmpresaConfigK {
+  nome_fantasia: string;
+  slogan: string;
+  responsavel_legal: string;
+  cargo_responsavel: string;
+  assinatura_texto: string;
+}
+
 export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: PipelineKanbanProps) {
   const [data, setData] = useState<KanbanState>(EMPTY_STATE);
+  const [empresa, setEmpresa] = useState<EmpresaConfigK>({
+    nome_fantasia: "COMPACT PRIME",
+    slogan: "Buffet & Eventos Premium",
+    responsavel_legal: "",
+    cargo_responsavel: "",
+    assinatura_texto: "",
+  });
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [activeColumnColor, setActiveColumnColor] = useState<string>("");
   const [entranceAnimated, setEntranceAnimated] = useState(false);
@@ -178,6 +193,14 @@ export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: 
     fetch("/api/painel-clientes")
       .then((r) => r.json())
       .then((json) => { if (json.ok) setData(json.data); })
+      .catch(() => {});
+    fetch("/api/configuracoes/empresa")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.ok && json.data) {
+          setEmpresa((prev) => ({ ...prev, ...json.data }));
+        }
+      })
       .catch(() => {});
   }, [refreshTrigger, refreshKey]);
 
@@ -1003,8 +1026,8 @@ export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: 
                 <div className="bg-white text-neutral-900 p-7 rounded-lg shadow-2xl border border-neutral-200" style={{ fontFamily: "Georgia, serif" }}>
                   <div className="border-b-2 border-amber-600 pb-4 mb-6 flex justify-between items-start">
                     <div>
-                      <h2 className="text-base font-bold uppercase tracking-wider text-amber-700" style={{ fontFamily: "sans-serif" }}>COMPACT PRIME</h2>
-                      <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-semibold" style={{ fontFamily: "sans-serif" }}>Proposta Comercial — Eventos Premium</p>
+                      <h2 className="text-base font-bold uppercase tracking-wider text-amber-700" style={{ fontFamily: "sans-serif" }}>{empresa.nome_fantasia}</h2>
+                      <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-semibold" style={{ fontFamily: "sans-serif" }}>Proposta Comercial — {empresa.slogan}</p>
                     </div>
                     <div className="text-right text-xs text-neutral-500" style={{ fontFamily: "sans-serif" }}>
                       <p>Ref.: CP-{showProposalModal.id.slice(-4).padStart(4, "0")}</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Building2,
   Briefcase,
@@ -72,12 +72,21 @@ export default function ConfiguacoesPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
-  // Mock Form States
+  // Empresa Form States
   const [nomeFantasia, setNomeFantasia] = useState("Compact Prime Buffet & Eventos Premium");
   const [slogan, setSlogan] = useState("Gastronomia refinada e cenografia exclusiva para casamentos e eventos de alto padrão.");
   const [telefone, setTelefone] = useState("(11) 98765-4321");
   const [email, setEmail] = useState("diretoria@compactprime.com.br");
   const [endereco, setEndereco] = useState("Av. Europa, 1500 - Jardins, São Paulo - SP");
+  const [razaoSocial, setRazaoSocial] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [responsavelLegal, setResponsavelLegal] = useState("");
+  const [cargoResponsavel, setCargoResponsavel] = useState("");
+  const [assinaturaTexto, setAssinaturaTexto] = useState("");
+  const [empresaLoading, setEmpresaLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Service Actives States (Toggles)
   const [buffetAtivo, setBuffetAtivo] = useState(true);
@@ -117,6 +126,78 @@ export default function ConfiguacoesPage() {
     { id: "visual", label: "Visual & Temas", icon: <Eye className="w-4 h-4" /> },
     { id: "clientes", label: "Clientes & Categorias", icon: <Tag className="w-4 h-4" /> },
   ];
+
+  useEffect(() => {
+    fetch("/api/configuracoes/empresa")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.ok || !json.data) return;
+        const d = json.data;
+        if (d.nome_fantasia) setNomeFantasia(d.nome_fantasia);
+        if (d.slogan) setSlogan(d.slogan);
+        if (d.telefone) setTelefone(d.telefone);
+        if (d.email) setEmail(d.email);
+        if (d.endereco) setEndereco(d.endereco);
+        if (d.razao_social) setRazaoSocial(d.razao_social);
+        if (d.cnpj) setCnpj(d.cnpj);
+        if (d.responsavel_legal) setResponsavelLegal(d.responsavel_legal);
+        if (d.cargo_responsavel) setCargoResponsavel(d.cargo_responsavel);
+        if (d.assinatura_texto) setAssinaturaTexto(d.assinatura_texto);
+        if (d.logo_url) setLogoUrl(d.logo_url);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const form = new FormData();
+      form.append("logo", file);
+      const res = await fetch("/api/configuracoes/empresa/logo", { method: "POST", body: form });
+      const json = await res.json();
+      if (json.ok) {
+        setLogoUrl(json.url + "?t=" + Date.now());
+        handleSave("Logo");
+      } else {
+        alert(json.error ?? "Erro ao enviar logo.");
+      }
+    } catch {
+      alert("Erro de conexão.");
+    } finally {
+      setLogoUploading(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  };
+
+  const handleSaveEmpresa = async () => {
+    setEmpresaLoading(true);
+    try {
+      const res = await fetch("/api/configuracoes/empresa", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome_fantasia: nomeFantasia,
+          slogan,
+          telefone,
+          email,
+          endereco,
+          razao_social: razaoSocial,
+          cnpj,
+          responsavel_legal: responsavelLegal,
+          cargo_responsavel: cargoResponsavel,
+          assinatura_texto: assinaturaTexto,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) handleSave("Empresa");
+    } catch {
+      // silent
+    } finally {
+      setEmpresaLoading(false);
+    }
+  };
 
   const handleSave = (sectionName: string) => {
     setToastMessage(`Configurações de ${sectionName} salvas com sucesso!`);
@@ -254,15 +335,33 @@ export default function ConfiguacoesPage() {
                 <p className="text-xs text-[var(--text-muted)] mt-0.5">Dados institucionais expostos em orçamentos, PDFs e propostas.</p>
               </div>
 
-              {/* Logo Mock */}
+              {/* Logo Upload */}
               <div className="flex items-center gap-5 p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--gold-300)] to-[var(--gold-600)] shadow-md border border-[var(--gold-500)]/30">
-                  <span className="text-black font-extrabold text-lg">CP</span>
+                <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--gold-300)] to-[var(--gold-600)] shadow-md border border-[var(--gold-500)]/30 overflow-hidden shrink-0">
+                  {logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={logoUrl} alt="Logomarca" className="w-full h-full object-contain" />
+                  ) : (
+                    <span className="text-black font-extrabold text-lg">CP</span>
+                  )}
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-[var(--text-primary)]">Logomarca Oficial</h4>
-                  <p className="text-[10px] text-[var(--text-muted)] mt-1">Formato ideal: PNG transparente, 512x512px.</p>
-                  <button className="mt-2 text-[10px] font-bold text-[var(--gold-300)] hover:underline cursor-pointer">Alterar Logomarca</button>
+                  <p className="text-[10px] text-[var(--text-muted)] mt-1">PNG transparente, máx. 2 MB, 512×512 px ideal.</p>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                  />
+                  <button
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={logoUploading}
+                    className="mt-2 text-[10px] font-bold text-[var(--gold-300)] hover:underline cursor-pointer disabled:opacity-50"
+                  >
+                    {logoUploading ? "Enviando..." : logoUrl ? "Alterar Logomarca" : "Enviar Logomarca"}
+                  </button>
                 </div>
               </div>
 
@@ -306,23 +405,91 @@ export default function ConfiguacoesPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wide">Endereço Comercial</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={endereco}
                     onChange={(e) => setEndereco(e.target.value)}
                     className="bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[var(--gold-400)] focus:outline-none rounded-lg p-2.5 text-xs text-[var(--text-primary)] transition-colors"
                   />
                 </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wide">Razão Social</label>
+                  <input
+                    type="text"
+                    value={razaoSocial}
+                    onChange={(e) => setRazaoSocial(e.target.value)}
+                    placeholder="Ex: Compact Prime Buffet & Eventos Ltda"
+                    className="bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[var(--gold-400)] focus:outline-none rounded-lg p-2.5 text-xs text-[var(--text-primary)] transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wide">CNPJ</label>
+                  <input
+                    type="text"
+                    value={cnpj}
+                    onChange={(e) => setCnpj(e.target.value)}
+                    placeholder="00.000.000/0001-00"
+                    className="bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[var(--gold-400)] focus:outline-none rounded-lg p-2.5 text-xs text-[var(--text-primary)] transition-colors font-mono"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wide">Responsável Legal</label>
+                  <input
+                    type="text"
+                    value={responsavelLegal}
+                    onChange={(e) => setResponsavelLegal(e.target.value)}
+                    placeholder="Nome completo da responsável"
+                    className="bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[var(--gold-400)] focus:outline-none rounded-lg p-2.5 text-xs text-[var(--text-primary)] transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wide">Cargo da Responsável</label>
+                  <input
+                    type="text"
+                    value={cargoResponsavel}
+                    onChange={(e) => setCargoResponsavel(e.target.value)}
+                    placeholder="Ex: Sócia-Diretora"
+                    className="bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[var(--gold-400)] focus:outline-none rounded-lg p-2.5 text-xs text-[var(--text-primary)] transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Assinatura */}
+              <div className="flex flex-col gap-3 p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+                <div>
+                  <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Assinatura nos Documentos</h4>
+                  <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Nome que aparece na linha de assinatura de contratos e propostas. Se vazio, usa o Responsável Legal.</p>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wide">Nome na Assinatura</label>
+                  <input
+                    type="text"
+                    value={assinaturaTexto}
+                    onChange={(e) => setAssinaturaTexto(e.target.value)}
+                    placeholder={responsavelLegal || "Ex: Michele Dargam"}
+                    className="bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[var(--gold-400)] focus:outline-none rounded-lg p-2.5 text-xs text-[var(--text-primary)] transition-colors"
+                  />
+                </div>
+                <div className="pt-2 border-t border-[var(--border-subtle)]">
+                  <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-2 font-bold">Pré-visualização</p>
+                  <div className="flex justify-center">
+                    <div className="border-t-2 border-neutral-500 pt-2 text-center min-w-[180px]">
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">{assinaturaTexto || responsavelLegal || "Nome do Responsável"}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{cargoResponsavel || "Cargo"}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Save button */}
               <div className="mt-auto pt-6 border-t border-[var(--border-subtle)] flex justify-end">
-                <button 
-                  onClick={() => handleSave("Empresa")}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                <button
+                  onClick={handleSaveEmpresa}
+                  disabled={empresaLoading}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-4 h-4 text-black stroke-[3]" />
-                  Salvar Configurações
+                  {empresaLoading ? "Salvando..." : "Salvar Configurações"}
                 </button>
               </div>
             </div>

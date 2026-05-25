@@ -31,6 +31,32 @@ import { ServiceBadgeGroup } from "@/app/components/ServiceBadge";
 type EventType = "Casamento" | "Infantil" | "Corporativo" | "Adulto";
 type ProposalStatus = "Enviada" | "Em negociação" | "Aprovada" | "Vencida";
 
+interface EmpresaConfig {
+  nome_fantasia: string;
+  razao_social: string;
+  cnpj: string;
+  endereco: string;
+  telefone: string;
+  email: string;
+  responsavel_legal: string;
+  cargo_responsavel: string;
+  assinatura_texto: string;
+  slogan: string;
+}
+
+const EMPRESA_DEFAULTS: EmpresaConfig = {
+  nome_fantasia: "COMPACT PRIME",
+  razao_social: "Compact Prime Buffet & Eventos Ltda",
+  cnpj: "",
+  endereco: "",
+  telefone: "",
+  email: "",
+  responsavel_legal: "",
+  cargo_responsavel: "",
+  assinatura_texto: "",
+  slogan: "Buffet & Eventos Premium",
+};
+
 interface Proposal {
   id: string;
   client: string;
@@ -107,6 +133,7 @@ const clausulas = [
 export default function PropostasPage() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [summary, setSummary] = useState<ProposalSummary>({ enviadas: 0, negociacao: 0, aprovadas: 0, vencidas: 0 });
+  const [empresa, setEmpresa] = useState<EmpresaConfig>(EMPRESA_DEFAULTS);
 
   useEffect(() => {
     fetch("/api/propostas")
@@ -115,6 +142,12 @@ export default function PropostasPage() {
         if (!json.ok) return;
         setProposals(json.data as Proposal[]);
         setSummary(json.summary as ProposalSummary);
+      })
+      .catch(() => {});
+    fetch("/api/configuracoes/empresa")
+      .then(r => r.json())
+      .then(json => {
+        if (json.ok && json.data) setEmpresa({ ...EMPRESA_DEFAULTS, ...json.data });
       })
       .catch(() => {});
   }, []);
@@ -523,8 +556,8 @@ export default function PropostasPage() {
                 <div>
                   <div className="flex justify-between items-start border-b-2 border-amber-600 pb-5 mb-8">
                     <div>
-                      <h2 className="text-xl font-bold uppercase tracking-wider text-amber-700 font-sans" style={{ fontFamily: "sans-serif" }}>COMPACT PRIME</h2>
-                      <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-sans font-semibold mt-0.5" style={{ fontFamily: "sans-serif" }}>Buffet & Eventos Premium</p>
+                      <h2 className="text-xl font-bold uppercase tracking-wider text-amber-700 font-sans" style={{ fontFamily: "sans-serif" }}>{empresa.nome_fantasia}</h2>
+                      <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-sans font-semibold mt-0.5" style={{ fontFamily: "sans-serif" }}>{empresa.slogan}</p>
                     </div>
                     <div className="text-right text-xs text-neutral-500 font-sans" style={{ fontFamily: "sans-serif" }}>
                       <p>Data: {selectedProposal.sendDate}</p>
@@ -780,11 +813,16 @@ export default function PropostasPage() {
                     <Building2 className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                     <h4 className="font-bold text-neutral-800 uppercase text-[10px] tracking-wider">1. Dados do Contratado (Empresa)</h4>
                   </div>
+                  {(!empresa.razao_social || !empresa.cnpj) && (
+                    <div className="mb-2 px-3 py-2 rounded bg-amber-50 border border-amber-200 text-[10px] text-amber-700 font-sans" style={{ fontFamily: "sans-serif" }}>
+                      Dados incompletos — preencha Razão Social e CNPJ em Configurações → Empresa.
+                    </div>
+                  )}
                   <div className="bg-neutral-50 border border-neutral-200 rounded p-3.5 grid grid-cols-2 gap-y-2 text-neutral-700">
-                    <div><span className="text-neutral-400">Razão Social:</span> <strong className="font-semibold">Compact Prime Buffet & Eventos Ltda</strong></div>
-                    <div><span className="text-neutral-400">CNPJ:</span> <strong className="font-semibold">00.000.000/0001-00</strong></div>
-                    <div><span className="text-neutral-400">Endereço:</span> <strong className="font-semibold">Rua dos Eventos, 1500 – São Paulo/SP</strong></div>
-                    <div><span className="text-neutral-400">Responsável:</span> <strong className="font-semibold">Diretor Comercial</strong></div>
+                    <div><span className="text-neutral-400">Razão Social:</span> <strong className={`font-semibold ${!empresa.razao_social ? "text-amber-600 italic" : ""}`}>{empresa.razao_social || "Não cadastrado"}</strong></div>
+                    <div><span className="text-neutral-400">CNPJ:</span> <strong className={`font-semibold font-mono ${!empresa.cnpj ? "text-amber-600 italic" : ""}`}>{empresa.cnpj || "Não cadastrado"}</strong></div>
+                    <div><span className="text-neutral-400">Endereço:</span> <strong className="font-semibold">{empresa.endereco || "—"}</strong></div>
+                    <div><span className="text-neutral-400">Responsável:</span> <strong className="font-semibold">{empresa.responsavel_legal || "—"}</strong></div>
                   </div>
                 </div>
 
@@ -894,8 +932,8 @@ export default function PropostasPage() {
                     </div>
                     <div className="text-center">
                       <div className="border-t border-neutral-400 pt-2">
-                        <p className="font-semibold text-neutral-800">Compact Prime Ltda</p>
-                        <p className="text-[10px] text-neutral-400 mt-0.5">Contratada</p>
+                        <p className="font-semibold text-neutral-800">{empresa.assinatura_texto || empresa.responsavel_legal || empresa.razao_social || "Compact Prime"}</p>
+                        <p className="text-[10px] text-neutral-400 mt-0.5">{empresa.cargo_responsavel || "Contratada"}</p>
                       </div>
                     </div>
                   </div>

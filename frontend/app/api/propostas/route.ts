@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { COMBO_DISCOUNTS } from "@/app/data/services";
+
+const KANBAN_EVENT_TYPES = ["Casamento", "Infantil", "Adulto", "Corporativo"];
 
 function normalizeServiceType(tipo: string): string | null {
   const t = tipo.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -10,62 +13,65 @@ function normalizeServiceType(tipo: string): string | null {
 }
 
 function mapStatus(dbStatus: string): string {
-  switch (dbStatus) {
-    case "enviada": return "Enviada";
-    case "aprovada": return "Aprovada";
-    case "vencida":
-    case "cancelada": return "Vencida";
-    default: return "Em negociação";
-  }
+  if (dbStatus === "proposta") return "Enviada";
+  if (dbStatus === "negociacao") return "Em negociação";
+  if (dbStatus === "fechado") return "Aprovada";
+  return "Em negociação";
 }
 
 export async function GET() {
   try {
-    const propostas = await prisma.propostas.findMany({
-      where: { deleted_at: null },
+    const eventos = await prisma.eventos.findMany({
+      where: {
+        deleted_at: null,
+        status: { in: ["proposta", "negociacao", "fechado"] },
+        tipo_evento: { in: KANBAN_EVENT_TYPES },
+      },
       orderBy: { created_at: "desc" },
       include: {
         clientes: true,
-        eventos: true,
-        proposta_servicos: { include: { servicos: true } },
+        evento_servicos: {
+          include: { servicos: true },
+        },
       },
     });
 
-    const [enviadas, negociacao, aprovadas, vencidas] = [
-      propostas.filter((p) => p.status === "enviada").length,
-      propostas.filter((p) => p.status === "rascunho" || p.status === "em_negociacao").length,
-      propostas.filter((p) => p.status === "aprovada").length,
-      propostas.filter((p) => p.status === "vencida" || p.status === "cancelada").length,
-    ];
+    let enviadas = 0;
+    let negociacao = 0;
+    let aprovadas = 0;
 
-    const data = propostas.map((p) => {
+    const data = eventos.map((e) => {
       const servicosContratados: string[] = [];
       const valoresPorServico: Record<string, number> = {};
 
-      for (const ps of p.proposta_servicos) {
-        const tipo = normalizeServiceType(ps.servicos.tipo);
+      for (const es of e.evento_servicos) {
+        const tipo = normalizeServiceType(es.servicos.tipo);
         if (!tipo) continue;
         if (!servicosContratados.includes(tipo)) servicosContratados.push(tipo);
-        const cents = Math.round(Number(ps.valor_final) * 100);
+        const cents = Math.round(Number(es.valor_estimado) * 100);
         valoresPorServico[tipo] = (valoresPorServico[tipo] ?? 0) + cents;
       }
 
-      const subtotalCents = Math.round(Number(p.valor_total) * 100);
-      const descontoTotal = Math.round(Number(p.desconto_total) * 100);
-      const totalCents = subtotalCents - descontoTotal;
-      const descontoCombo = subtotalCents > 0 ? descontoTotal / subtotalCents : 0;
+      const subtotalCents = Object.values(valoresPorServico).reduce((s, v) => s + v, 0);
+      const descontoCombo = COMBO_DISCOUNTS[servicosContratados.length] ?? 0;
+      const totalCents = Math.round(subtotalCents * (1 - descontoCombo));
 
-      const sendDate = p.enviada_em
-        ? new Date(p.enviada_em).toLocaleDateString("pt-BR")
-        : new Date(p.created_at).toLocaleDateString("pt-BR");
+      const status = mapStatus(e.status);
+      if (status === "Enviada") enviadas++;
+      else if (status === "Em negociação") negociacao++;
+      else if (status === "Aprovada") aprovadas++;
+
+      const sendDate = e.created_at
+        ? new Date(e.created_at).toLocaleDateString("pt-BR")
+        : new Date().toLocaleDateString("pt-BR");
 
       return {
-        id: p.id,
-        client: p.clientes.nome,
-        eventType: p.eventos.tipo_evento,
+        id: e.id,
+        client: e.clientes.nome,
+        eventType: e.tipo_evento,
         sendDate,
-        validity: `${p.validade_dias} dias`,
-        status: mapStatus(p.status),
+        validity: "15 dias",
+        status,
         servicosContratados,
         valoresPorServico,
         descontoCombo,
@@ -77,7 +83,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       data,
-      summary: { enviadas, negociacao, aprovadas, vencidas },
+      summary: { enviadas, negociacao, aprovadas, vencidas: 0 },
     });
   } catch (error) {
     console.error("[GET /api/propostas]", error);
