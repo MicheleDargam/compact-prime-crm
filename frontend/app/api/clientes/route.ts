@@ -75,12 +75,17 @@ export async function POST(request: NextRequest) {
     return err("Requisição inválida: corpo JSON malformado.", "JSON parse error");
   }
 
-  const { nome, cpf, telefone, categoria, observacoes, tipoEvento, dataEvento, servicos } = body as Record<string, unknown>;
+  const { nome, cpf, email, telefone, categoria, observacoes, tipoEvento, dataEvento, servicos } = body as Record<string, unknown>;
 
   // ── Validações de entrada ────────────────────────────────────────────────────
 
   if (!nome || typeof nome !== "string" || !nome.trim()) {
     return err("Nome do cliente é obrigatório.");
+  }
+
+  const emailSafe = email && typeof email === "string" ? email.trim().toLowerCase() || null : null;
+  if (emailSafe && !emailSafe.includes("@")) {
+    return err("E-mail inválido.", `Received: ${emailSafe}`);
   }
 
   const cpfLimpo = cpf && typeof cpf === "string" ? cpf.replace(/\D/g, "") || null : null;
@@ -151,6 +156,7 @@ export async function POST(request: NextRequest) {
         data: {
           nome: nome.trim(),
           cpf: cpfLimpo,
+          email: emailSafe,
           observacoes: typeof observacoes === "string" ? observacoes.trim() || null : null,
           origem: "CRM",
           categoria_cliente_id: categoriaRecord!.id,

@@ -10,10 +10,13 @@ export type ClientCategory = "Cliente Novo" | "Cliente Prime" | "Cliente VIP";
 
 export interface Lead {
   id: LeadId;
+  cliente_id?: string;
   name: string;
+  email?: string | null;
   phone: string;
   cpf: string;
   eventType: EventType;
+  data_evento?: string | null;
   buffetTime: string;
   value: string;
   /** Raw numeric value in cents for sorting/totals */

@@ -32,6 +32,7 @@ export default function KanbanPage() {
   const [formEventDate, setFormEventDate] = useState("");
   const [formServicos, setFormServicos] = useState<ServiceType[]>([]);
   const [formObservacoes, setFormObservacoes] = useState("");
+  const [formEmail, setFormEmail] = useState("");
   const [formCategory, setFormCategory] = useState<ClientCategory>("Cliente Novo");
   const [formSaving, setFormSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -46,7 +47,7 @@ export default function KanbanPage() {
     setFormServicos((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
 
   const resetForm = () => {
-    setFormNome(""); setFormCpf(""); setFormTelefone("");
+    setFormNome(""); setFormCpf(""); setFormTelefone(""); setFormEmail("");
     setFormEventType("Casamento"); setFormEventDate("");
     setFormServicos([]); setFormObservacoes("");
     setFormCategory("Cliente Novo"); setFormError("");
@@ -62,6 +63,7 @@ export default function KanbanPage() {
         body: JSON.stringify({
           nome: formNome.trim() || "Sem nome",
           cpf: formCpf.trim() || null,
+          email: formEmail.trim() || null,
           telefone: formTelefone.trim() || null,
           categoria: formCategory,
           observacoes: formObservacoes.trim() || null,
@@ -220,6 +222,19 @@ export default function KanbanPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">E-mail</label>
+                  <input
+                    type="email"
+                    placeholder="email@exemplo.com"
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
+                    className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Tipo de Evento</label>
                   <select
                     value={formEventType}
@@ -232,16 +247,15 @@ export default function KanbanPage() {
                     <option>Adulto</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Data do Evento</label>
-                <input
-                  type="date"
-                  value={formEventDate}
-                  onChange={(e) => setFormEventDate(e.target.value)}
-                  className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors"
-                />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Data do Evento</label>
+                  <input
+                    type="date"
+                    value={formEventDate}
+                    onChange={(e) => setFormEventDate(e.target.value)}
+                    className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors"
+                  />
+                </div>
               </div>
 
               {/* Categoria */}

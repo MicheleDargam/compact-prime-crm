@@ -25,6 +25,9 @@ const STATUS_TO_COLUMN: Record<string, string> = {
   fechado: "col-fechado",
 };
 
+// Only these types appear in the kanban pipeline
+const KANBAN_EVENT_TYPES = ["Casamento", "Infantil", "Adulto", "Corporativo"];
+
 function normalizeServiceType(tipo: string): ServiceType | null {
   const t = tipo
     .toLowerCase()
@@ -59,7 +62,10 @@ const VALID_EVENT_TYPES: EventType[] = [
 
 export async function GET() {
   const eventos = await prisma.eventos.findMany({
-    where: { deleted_at: null },
+    where: {
+      deleted_at: null,
+      tipo_evento: { in: KANBAN_EVENT_TYPES },
+    },
     orderBy: { created_at: "desc" },
     include: {
       clientes: {
@@ -91,7 +97,11 @@ export async function GET() {
       ? "Cliente Prime"
       : "Cliente Novo";
 
-    const phone = cliente.cliente_telefones?.numero ?? "—";
+    const phone =
+      Array.isArray(cliente.cliente_telefones)
+        ? (cliente.cliente_telefones.find((t: { principal: boolean; numero: string }) => t.principal)?.numero ?? cliente.cliente_telefones[0]?.numero ?? "—")
+        : (cliente.cliente_telefones as { principal: boolean; numero: string } | null)?.numero ?? "—";
+
     const cpf = formatCpf(cliente.cpf ?? null);
 
     const tipoRaw = evento.tipo_evento.trim();
@@ -119,10 +129,13 @@ export async function GET() {
 
     const lead: Lead = {
       id: evento.id,
+      cliente_id: cliente.id,
       name: cliente.nome,
+      email: cliente.email ?? null,
       phone,
       cpf,
       eventType,
+      data_evento: evento.data_evento ? evento.data_evento.toISOString().split("T")[0] : null,
       buffetTime: "5 horas",
       value: formatCurrency(totalCents),
       valueCents: totalCents,
@@ -138,7 +151,7 @@ export async function GET() {
 
     leadsMap[evento.id] = lead;
     const colId = STATUS_TO_COLUMN[evento.status] ?? "col-novo";
-    columnLeadIds[colId].push(evento.id);
+    if (colId in columnLeadIds) columnLeadIds[colId].push(evento.id);
   }
 
   const columns: Column[] = COLUMN_DEFS.map((def) => ({

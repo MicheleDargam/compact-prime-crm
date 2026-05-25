@@ -101,7 +101,7 @@ export function CardContent({ lead, columnColor, innerRef, style, attributes, li
           })()}
           <p className="text-[10px] uppercase font-bold mt-0.5 tracking-wider" style={{ color: columnColor }}>{lead.eventType}</p>
         </div>
-        <div className="flex items-start gap-0.5 flex-shrink-0 ml-2">
+        <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-2">
           <div className="text-right">
             <p className="text-xs font-bold font-mono" style={{ color: combo ? "var(--gold-300)" : "var(--text-primary)" }}>
               {formatCurrency(lead.totalCents / 100)}
@@ -116,9 +116,10 @@ export function CardContent({ lead, columnColor, innerRef, style, attributes, li
                 const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                 onMenuClick({ x: rect.right, y: rect.bottom + 4 }, lead.id);
               }}
-              className="p-0.5 ml-0.5 text-[var(--text-muted)] hover:text-[var(--gold-400)] hover:bg-[var(--gold-400)]/10 rounded transition-colors flex-shrink-0 cursor-pointer"
+              title="Ações"
+              className="flex items-center justify-center w-7 h-7 rounded-lg border border-[var(--border-default)] bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--gold-400)] hover:bg-[var(--gold-500)]/10 hover:border-[var(--gold-500)]/35 transition-all cursor-pointer flex-shrink-0 active:scale-95"
             >
-              <MoreHorizontal className="w-3.5 h-3.5" />
+              <MoreHorizontal className="w-4 h-4" />
             </button>
           )}
         </div>
