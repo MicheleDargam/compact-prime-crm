@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileText,
   Edit,
@@ -49,61 +49,12 @@ interface Proposal {
   totalCents: number;
 }
 
-// Mock Data
-const initialProposals: Proposal[] = [
-  {
-    id: "1",
-    client: "Ana & João",
-    eventType: "Casamento",
-    sendDate: "10/05/2026",
-    validity: "15 dias",
-    status: "Aprovada",
-    servicosContratados: ["buffet", "decoracao", "fotografia"],
-    valoresPorServico: { buffet: 3500000, decoracao: 1000000, fotografia: 500000 },
-    descontoCombo: 0.10,
-    subtotalCents: 5000000,
-    totalCents: 4500000,
-  },
-  {
-    id: "2",
-    client: "Infantil Miguel",
-    eventType: "Infantil",
-    sendDate: "15/05/2026",
-    validity: "15 dias",
-    status: "Enviada",
-    servicosContratados: ["buffet"],
-    valoresPorServico: { buffet: 1800000 },
-    descontoCombo: 0,
-    subtotalCents: 1800000,
-    totalCents: 1800000,
-  },
-  {
-    id: "3",
-    client: "PrimeTech",
-    eventType: "Corporativo",
-    sendDate: "12/05/2026",
-    validity: "15 dias",
-    status: "Em negociação",
-    servicosContratados: ["buffet", "decoracao"],
-    valoresPorServico: { buffet: 3000000, decoracao: 684210 },
-    descontoCombo: 0.05,
-    subtotalCents: 3684210,
-    totalCents: 3500000,
-  },
-  {
-    id: "4",
-    client: "Juliana Costa",
-    eventType: "Adulto",
-    sendDate: "01/05/2026",
-    validity: "15 dias",
-    status: "Vencida",
-    servicosContratados: ["decoracao", "fotografia"],
-    valoresPorServico: { decoracao: 1500000, fotografia: 815789 },
-    descontoCombo: 0.05,
-    subtotalCents: 2315789,
-    totalCents: 2200000,
-  },
-];
+interface ProposalSummary {
+  enviadas: number;
+  negociacao: number;
+  aprovadas: number;
+  vencidas: number;
+}
 
 const eventTypeStyles: Record<EventType, string> = {
   "Casamento": "bg-pink-500/10 text-pink-400 border-pink-500/20",
@@ -154,7 +105,19 @@ const clausulas = [
 ];
 
 export default function PropostasPage() {
-  const [proposals, setProposals] = useState<Proposal[]>(initialProposals);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [summary, setSummary] = useState<ProposalSummary>({ enviadas: 0, negociacao: 0, aprovadas: 0, vencidas: 0 });
+
+  useEffect(() => {
+    fetch("/api/propostas")
+      .then(r => r.json())
+      .then(json => {
+        if (!json.ok) return;
+        setProposals(json.data as Proposal[]);
+        setSummary(json.summary as ProposalSummary);
+      })
+      .catch(() => {});
+  }, []);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeStatusFilter, setActiveStatusFilter] = useState("Todos");
   const [activeServiceFilter, setActiveServiceFilter] = useState("Todos");
@@ -276,7 +239,7 @@ export default function PropostasPage() {
           <div className="p-3 bg-blue-500/10 rounded-lg text-blue-400"><Send className="w-6 h-6" /></div>
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Propostas enviadas</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">12</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{summary.enviadas}</p>
           </div>
         </div>
 
@@ -285,7 +248,7 @@ export default function PropostasPage() {
           <div className="p-3 bg-yellow-500/10 rounded-lg text-yellow-400"><Clock className="w-6 h-6" /></div>
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Em negociação</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">5</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{summary.negociacao}</p>
           </div>
         </div>
 
@@ -293,8 +256,8 @@ export default function PropostasPage() {
           <div className="absolute top-0 left-0 w-full h-[2px] bg-orange-500/40 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="p-3 bg-orange-500/10 rounded-lg text-orange-400"><AlertCircle className="w-6 h-6" /></div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Propostas vencendo</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">2</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Propostas vencidas</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{summary.vencidas}</p>
           </div>
         </div>
 
@@ -302,8 +265,8 @@ export default function PropostasPage() {
           <div className="absolute top-0 left-0 w-full h-[2px] bg-green-500/40 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="p-3 bg-green-500/10 rounded-lg text-green-400"><CheckCircle2 className="w-6 h-6" /></div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Propostas fechadas</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">24</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Propostas aprovadas</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{summary.aprovadas}</p>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Building2,
   Briefcase,
@@ -54,11 +54,6 @@ interface PromotionRule {
   observations: string;
 }
 
-const INITIAL_RULES: PromotionRule[] = [
-  { id: "rule-1", name: "Pacote Fotográfico – Novos Clientes", clientCategory: "Cliente Novo", services: ["Buffet", "Fotografia"], discount: 10, active: true, observations: "Válido para o primeiro evento contratado." },
-  { id: "rule-2", name: "Especial Prime – Buffet & Decoração", clientCategory: "Cliente Prime", services: ["Buffet", "Decoração"], discount: 15, active: true, observations: "Exclusivo para clientes recorrentes." },
-  { id: "rule-3", name: "Combo VIP Completo", clientCategory: "Cliente VIP", services: ["Buffet", "Decoração", "Fotografia"], discount: 20, active: true, observations: "Pacote completo para clientes estratégicos e alto ticket." },
-];
 
 const CATEGORY_BADGE_STYLE: Record<ClientCategoryOption, string> = {
   "Cliente Novo": "text-neutral-400 border-neutral-600/50 bg-neutral-800/50",
@@ -132,7 +127,25 @@ export default function ConfiguacoesPage() {
   };
 
   // Promotion Rules
-  const [promotionRules, setPromotionRules] = useState<PromotionRule[]>(INITIAL_RULES);
+  const [promotionRules, setPromotionRules] = useState<PromotionRule[]>([]);
+
+  useEffect(() => {
+    fetch("/api/configuracoes/regras")
+      .then(r => r.json())
+      .then(json => {
+        if (!json.ok) return;
+        setPromotionRules((json.data as Array<{ id: string; name: string; clientCategory: string; discount: number; active: boolean; observations: string }>).map(r => ({
+          id: r.id,
+          name: r.name,
+          clientCategory: r.clientCategory as ClientCategoryOption,
+          services: [] as ServiceOption[],
+          discount: r.discount,
+          active: r.active,
+          observations: r.observations,
+        })));
+      })
+      .catch(() => {});
+  }, []);
   const [showRuleForm, setShowRuleForm] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [ruleFormName, setRuleFormName] = useState("");
@@ -438,10 +451,10 @@ export default function ConfiguacoesPage() {
                               {/* Services */}
                               <div className="flex flex-wrap gap-1">
                                 {rule.services.map((svc, i) => (
-                                  <React.Fragment key={svc}>
+                                  <span key={svc} className="inline-flex items-center gap-1">
                                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border ${SERVICE_BADGE_STYLE[svc]}`}>{svc}</span>
                                     {i < rule.services.length - 1 && <span className="text-[var(--text-muted)] text-[9px] self-center">+</span>}
-                                  </React.Fragment>
+                                  </span>
                                 ))}
                               </div>
 

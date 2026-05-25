@@ -31,17 +31,6 @@ export const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   Equipamentos: "#f97316",
 };
 
-// Revenue per month for Buffet (mock)
-const MONTHLY_REVENUES: Record<string, number> = {
-  "Maio 2026": 85000,
-  "Abril 2026": 102000,
-  "Março 2026": 78000,
-};
-
-export function getBuffetRevenue(month: string): number {
-  return MONTHLY_REVENUES[month] ?? 0;
-}
-
 export function isoToDisplayDate(iso: string): string {
   if (!iso) return "";
   const [y, m, d] = iso.split("-");
@@ -63,27 +52,7 @@ export function dateToMonth(dateStr: string): string {
   return `${monthNames[monthIndex]} ${year}`;
 }
 
-// Seed expenses matching the static values in socias-caixa page
-const SEED_EXPENSES: Expense[] = [
-  // Maio 2026 — Buffet: Fornecedores 15k, Funcionários 12k, Insumos 7k, Operacional 5k, Equipamentos 3k
-  { id: "e001", description: "Fornecedores de alimentos", category: "Fornecedores", supplier: "FornecedoresAlim Ltda", service: "buffet", value: 15000, date: "05/05/2026", month: "Maio 2026", paymentMethod: "Transferência", observations: "", hasReceipt: true },
-  { id: "e002", description: "Pagamento de equipe", category: "Funcionários", supplier: "Folha Interna", service: "buffet", value: 12000, date: "10/05/2026", month: "Maio 2026", paymentMethod: "Transferência", observations: "", hasReceipt: true },
-  { id: "e003", description: "Insumos e descartáveis", category: "Insumos", supplier: "Distribuidora ABC", service: "buffet", value: 7000, date: "12/05/2026", month: "Maio 2026", paymentMethod: "Boleto", observations: "", hasReceipt: false },
-  { id: "e004", description: "Energia e água", category: "Operacional", supplier: "Concessionárias", service: "buffet", value: 5000, date: "15/05/2026", month: "Maio 2026", paymentMethod: "Débito automático", observations: "", hasReceipt: true },
-  { id: "e005", description: "Manutenção de equipamentos", category: "Equipamentos", supplier: "TechFix ME", service: "buffet", value: 3000, date: "20/05/2026", month: "Maio 2026", paymentMethod: "Pix", observations: "", hasReceipt: false },
-  // Abril 2026 — Buffet: Fornecedores 18k, Funcionários 13.5k, Insumos 8k, Operacional 5k, Equipamentos 3.5k
-  { id: "e006", description: "Fornecedores de alimentos", category: "Fornecedores", supplier: "FornecedoresAlim Ltda", service: "buffet", value: 18000, date: "04/04/2026", month: "Abril 2026", paymentMethod: "Transferência", observations: "", hasReceipt: true },
-  { id: "e007", description: "Pagamento de equipe", category: "Funcionários", supplier: "Folha Interna", service: "buffet", value: 13500, date: "10/04/2026", month: "Abril 2026", paymentMethod: "Transferência", observations: "", hasReceipt: true },
-  { id: "e008", description: "Insumos e descartáveis", category: "Insumos", supplier: "Distribuidora ABC", service: "buffet", value: 8000, date: "12/04/2026", month: "Abril 2026", paymentMethod: "Boleto", observations: "", hasReceipt: false },
-  { id: "e009", description: "Energia e água", category: "Operacional", supplier: "Concessionárias", service: "buffet", value: 5000, date: "15/04/2026", month: "Abril 2026", paymentMethod: "Débito automático", observations: "", hasReceipt: true },
-  { id: "e010", description: "Locação e manutenção de equipamentos", category: "Equipamentos", supplier: "TechFix ME", service: "buffet", value: 3500, date: "20/04/2026", month: "Abril 2026", paymentMethod: "Pix", observations: "", hasReceipt: false },
-  // Março 2026 — Buffet: Fornecedores 14k, Funcionários 12k, Insumos 7k, Operacional 4k, Equipamentos 2k
-  { id: "e011", description: "Fornecedores de alimentos", category: "Fornecedores", supplier: "FornecedoresAlim Ltda", service: "buffet", value: 14000, date: "05/03/2026", month: "Março 2026", paymentMethod: "Transferência", observations: "", hasReceipt: true },
-  { id: "e012", description: "Pagamento de equipe", category: "Funcionários", supplier: "Folha Interna", service: "buffet", value: 12000, date: "10/03/2026", month: "Março 2026", paymentMethod: "Transferência", observations: "", hasReceipt: true },
-  { id: "e013", description: "Insumos e descartáveis", category: "Insumos", supplier: "Distribuidora ABC", service: "buffet", value: 7000, date: "12/03/2026", month: "Março 2026", paymentMethod: "Boleto", observations: "", hasReceipt: false },
-  { id: "e014", description: "Energia e água", category: "Operacional", supplier: "Concessionárias", service: "buffet", value: 4000, date: "15/03/2026", month: "Março 2026", paymentMethod: "Débito automático", observations: "", hasReceipt: true },
-  { id: "e015", description: "Equipamentos novos", category: "Equipamentos", supplier: "TechFix ME", service: "buffet", value: 2000, date: "20/03/2026", month: "Março 2026", paymentMethod: "Pix", observations: "", hasReceipt: false },
-];
+const SEED_EXPENSES: Expense[] = [];
 
 export interface MovementLog {
   id: string;
@@ -91,13 +60,7 @@ export interface MovementLog {
   timestamp: string;
 }
 
-const SEED_LOGS: MovementLog[] = [
-  { id: "l001", text: "[RET] Retirada registrada — Ana Paula: R$ 3.200,00 — Maio 2026", timestamp: "22/05/2026 09:14" },
-  { id: "l002", text: "[DOC] Contrato #CP-2026-047 vinculado ao mês de Maio 2026", timestamp: "20/05/2026 15:32" },
-  { id: "l003", text: "[CAI] Despesa registrada: Insumos e descartáveis — R$ 7.000,00", timestamp: "12/05/2026 11:08" },
-  { id: "l004", text: "[REL] Relatório mensal de Abril 2026 exportado em PDF", timestamp: "05/05/2026 08:47" },
-  { id: "l005", text: "[SIS] Mês de Abril 2026 encerrado. Lucro líquido: R$ 54.000,00", timestamp: "01/05/2026 00:00" },
-];
+const SEED_LOGS: MovementLog[] = [];
 
 interface CrmDataContextValue {
   expenses: Expense[];

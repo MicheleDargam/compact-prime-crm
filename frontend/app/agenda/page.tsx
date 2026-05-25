@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -70,145 +70,82 @@ const statusStyleMap: Record<StatusOperacional, string> = {
 
 const serviceFilterOptions = ["Todos", "Buffet", "Decoração", "Fotografia", "Combo"];
 
-// Generation of May 2026 days (Visual Example)
-const generateMockDays = (): CalendarDay[] => {
+const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+function buildCalendarDays(year: number, month: number, apiEvents: Record<number, CalendarEvent[]>): CalendarDay[] {
   const days: CalendarDay[] = [];
-  
-  // April days (previous month)
-  const prevMonthDays = [26, 27, 28, 29, 30];
-  prevMonthDays.forEach(date => {
-    days.push({ date, isCurrentMonth: false, events: [] });
-  });
+  const firstDayOfMonth = new Date(year, month - 1, 1);
+  const startDayOfWeek = firstDayOfMonth.getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const today = new Date();
+  const isCurrMonth = today.getFullYear() === year && today.getMonth() + 1 === month;
+  const prevMonthDays = new Date(year, month - 1, 0).getDate();
 
-  // May days
-  for (let i = 1; i <= 31; i++) {
-    const events: CalendarEvent[] = [];
-    
-    if (i === 2) {
-      events.push({ 
-        id: "1", 
-        title: "Ana & João", 
-        type: "casamento", 
-        time: "19:00",
-        servicosContratados: ["buffet", "decoracao", "fotografia"],
-        statusOperacional: "Confirmado",
-        colaboradoresCount: 8
-      });
-    }
-    if (i === 5) {
-      events.push({ 
-        id: "2", 
-        title: "Visita técnica", 
-        type: "visita", 
-        time: "10:00",
-        servicosContratados: [],
-        statusOperacional: "Confirmado",
-        colaboradoresCount: 1
-      });
-      events.push({ 
-        id: "3", 
-        title: "Reunião de proposta", 
-        type: "reuniao", 
-        time: "14:00",
-        servicosContratados: [],
-        statusOperacional: "Confirmado",
-        colaboradoresCount: 1
-      });
-    }
-    if (i === 9) {
-      events.push({ 
-        id: "4", 
-        title: "Infantil Miguel", 
-        type: "infantil", 
-        time: "14:00",
-        servicosContratados: ["buffet"],
-        statusOperacional: "Montagem",
-        colaboradoresCount: 4
-      });
-      events.push({ 
-        id: "5", 
-        title: "Adulto Juliana", 
-        type: "adulto", 
-        time: "20:00",
-        servicosContratados: ["buffet", "decoracao"],
-        statusOperacional: "Confirmado",
-        colaboradoresCount: 5
-      });
-    }
-    if (i === 14) {
-      events.push({ 
-        id: "6", 
-        title: "Corp. PrimeTech", 
-        type: "corporativo", 
-        time: "09:00",
-        servicosContratados: ["buffet", "fotografia"],
-        statusOperacional: "Em andamento",
-        colaboradoresCount: 6
-      });
-    }
-    if (i === 23) {
-      events.push({ 
-        id: "7", 
-        title: "Reunião com DJ", 
-        type: "reuniao", 
-        time: "16:00",
-        servicosContratados: [],
-        statusOperacional: "Confirmado",
-        colaboradoresCount: 1
-      });
-    }
-
-    days.push({ 
-      date: i, 
-      isCurrentMonth: true, 
-      isToday: i === 18, 
-      events 
-    });
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    days.push({ date: prevMonthDays - i, isCurrentMonth: false, events: [] });
   }
-
-  // Next month cells padding
-  const remainingCells = 42 - days.length;
-  for (let i = 1; i <= remainingCells; i++) {
+  for (let d = 1; d <= daysInMonth; d++) {
+    days.push({ date: d, isCurrentMonth: true, isToday: isCurrMonth && d === today.getDate(), events: apiEvents[d] ?? [] });
+  }
+  const remaining = 42 - days.length;
+  for (let i = 1; i <= remaining; i++) {
     days.push({ date: i, isCurrentMonth: false, events: [] });
   }
-
   return days;
-};
+}
 
 export default function AgendaPage() {
+  const now = new Date();
   const daysOfWeek = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-  const [calendarDays, setCalendarDays] = useState<CalendarDay[]>(generateMockDays());
+  const [currentYear, setCurrentYear] = useState(now.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(now.getMonth() + 1);
+  const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
   const [activeServiceFilter, setActiveServiceFilter] = useState("Todos");
-  
-  // Selected day state (Defaults to day index containing event on Day 9 of May)
-  const defaultSelectedDay = calendarDays.find(d => d.date === 9 && d.isCurrentMonth) || calendarDays[18];
-  const [selectedDay, setSelectedDay] = useState<CalendarDay>(defaultSelectedDay);
+  const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
+
+  const monthLabel = `${MONTH_NAMES[currentMonth - 1]} ${currentYear}`;
+
+  useEffect(() => {
+    fetch(`/api/agenda?year=${currentYear}&month=${currentMonth}`)
+      .then(r => r.json())
+      .then(json => {
+        if (!json.ok) return;
+        const { year, month, events } = json.data as { year: number; month: number; events: Record<number, CalendarEvent[]> };
+        const built = buildCalendarDays(year, month, events);
+        setCalendarDays(built);
+        const todayD = year === now.getFullYear() && month === now.getMonth() + 1 ? now.getDate() : 1;
+        setSelectedDay(built.find(d => d.date === todayD && d.isCurrentMonth) ?? built.find(d => d.isCurrentMonth) ?? null);
+      })
+      .catch(() => {});
+  }, [currentYear, currentMonth]);
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 1) { setCurrentYear(y => y - 1); setCurrentMonth(12); }
+    else setCurrentMonth(m => m - 1);
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 12) { setCurrentYear(y => y + 1); setCurrentMonth(1); }
+    else setCurrentMonth(m => m + 1);
+  };
 
   const handleSelectDay = (day: CalendarDay) => {
     if (day.isCurrentMonth) {
-      // Find actual day to ensure we have the fresh data state
       const actualDay = calendarDays.find(d => d.date === day.date && d.isCurrentMonth);
       if (actualDay) setSelectedDay(actualDay);
     }
   };
 
-  // Helper helper to filter events in memory
   const getFilteredEvents = (events: CalendarEvent[]) => {
     return events.filter(e => {
       if (activeServiceFilter === "Todos") return true;
       if (activeServiceFilter === "Combo") return isCombo(e.servicosContratados);
-      
-      const serviceMap: Record<string, string> = {
-        "Buffet": "buffet",
-        "Decoração": "decoracao",
-        "Fotografia": "fotografia",
-      };
+      const serviceMap: Record<string, string> = { "Buffet": "buffet", "Decoração": "decoracao", "Fotografia": "fotografia" };
       return e.servicosContratados.includes(serviceMap[activeServiceFilter] as any);
     });
   };
 
-  // Selected Day's filtered events list
-  const selectedDayFilteredEvents = getFilteredEvents(selectedDay.events);
+  const selectedDayFilteredEvents = selectedDay ? getFilteredEvents(selectedDay.events) : [];
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-primary)] p-4 md:p-8 animate-fade-in-up overflow-y-auto">
@@ -229,13 +166,13 @@ export default function AgendaPage() {
         </div>
 
         <div className="flex items-center gap-4 bg-[var(--bg-card)] p-1.5 rounded-lg border border-[var(--border-default)] shadow-card">
-          <button className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] rounded-md transition-colors cursor-pointer">
+          <button onClick={handlePrevMonth} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] rounded-md transition-colors cursor-pointer">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <span className="font-semibold text-[var(--text-primary)] min-w-[120px] text-center font-sans">
-            Maio 2026
+            {monthLabel}
           </span>
-          <button className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] rounded-md transition-colors cursor-pointer">
+          <button onClick={handleNextMonth} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] rounded-md transition-colors cursor-pointer">
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
@@ -356,7 +293,7 @@ export default function AgendaPage() {
               <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Visão logística da data selecionada</p>
             </div>
             <span className="text-xs font-bold font-mono px-2.5 py-1 rounded bg-[var(--bg-input)] text-[var(--gold-300)] border border-[var(--border-default)]">
-              {selectedDay.date} de Maio, 2026
+              {selectedDay ? `${selectedDay.date} de ${MONTH_NAMES[currentMonth - 1]}, ${currentYear}` : "—"}
             </span>
           </div>
 

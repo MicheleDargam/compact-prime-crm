@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DollarSign,
   TrendingUp,
@@ -74,103 +74,6 @@ interface HistoryEntry {
   value: string;
 }
 
-// ─── Mock Data ─────────────────────────────────────────────────────────────────
-const mockRecords: FinanceRecord[] = [
-  {
-    id: "1",
-    client: "Ana & João",
-    eventType: "Casamento",
-    services: ["Buffet", "Decoração", "Fotografia", "Combo"],
-    totalValue: "R$ 45.000",
-    downPayment: "R$ 15.000",
-    installments: "3/10",
-    nextDueDate: "10/06/2026",
-    status: "Parcial",
-    hasCombo: true,
-    comboDiscount: "10%",
-    installmentList: [
-      { number: "1/10", dueDate: "10/03/2026", value: "R$ 5.000", status: "Pago", method: "PIX", receiptGenerated: true },
-      { number: "2/10", dueDate: "10/04/2026", value: "R$ 5.000", status: "Pago", method: "PIX", receiptGenerated: true },
-      { number: "3/10", dueDate: "10/05/2026", value: "R$ 5.000", status: "Pago", method: "Cartão de Crédito", receiptGenerated: true },
-      { number: "4/10", dueDate: "10/06/2026", value: "R$ 5.000", status: "Pendente", receiptGenerated: false },
-      { number: "5/10", dueDate: "10/07/2026", value: "R$ 5.000", status: "Pendente", receiptGenerated: false },
-      { number: "6/10", dueDate: "10/08/2026", value: "R$ 5.000", status: "Pendente", receiptGenerated: false },
-      { number: "7/10", dueDate: "10/09/2026", value: "R$ 5.000", status: "Pendente", receiptGenerated: false },
-      { number: "8/10", dueDate: "10/10/2026", value: "R$ 2.000", status: "Pendente", receiptGenerated: false },
-      { number: "9/10", dueDate: "10/11/2026", value: "R$ 2.000", status: "Pendente", receiptGenerated: false },
-      { number: "10/10", dueDate: "10/12/2026", value: "R$ 1.000", status: "Pendente", receiptGenerated: false },
-    ],
-  },
-  {
-    id: "2",
-    client: "Infantil Miguel",
-    eventType: "Infantil",
-    services: ["Buffet"],
-    totalValue: "R$ 18.000",
-    downPayment: "R$ 5.000",
-    installments: "1/5",
-    nextDueDate: "15/05/2026",
-    status: "Pendente",
-    hasCombo: false,
-    installmentList: [
-      { number: "1/5", dueDate: "15/05/2026", value: "R$ 3.250", status: "Vencida", receiptGenerated: false },
-      { number: "2/5", dueDate: "15/06/2026", value: "R$ 3.250", status: "Pendente", receiptGenerated: false },
-      { number: "3/5", dueDate: "15/07/2026", value: "R$ 3.250", status: "Pendente", receiptGenerated: false },
-      { number: "4/5", dueDate: "15/08/2026", value: "R$ 3.250", status: "Pendente", receiptGenerated: false },
-      { number: "5/5", dueDate: "15/09/2026", value: "R$ 0", status: "Pendente", receiptGenerated: false },
-    ],
-  },
-  {
-    id: "3",
-    client: "PrimeTech",
-    eventType: "Corporativo",
-    services: ["Buffet", "Fotografia", "Combo"],
-    totalValue: "R$ 35.000",
-    downPayment: "R$ 10.000",
-    installments: "2/4",
-    nextDueDate: "20/05/2026",
-    status: "Parcial",
-    hasCombo: true,
-    comboDiscount: "5%",
-    installmentList: [
-      { number: "1/4", dueDate: "20/03/2026", value: "R$ 10.000", status: "Pago", method: "Transferência", receiptGenerated: true },
-      { number: "2/4", dueDate: "20/04/2026", value: "R$ 5.000", status: "Pago", method: "Transferência", receiptGenerated: true },
-      { number: "3/4", dueDate: "20/05/2026", value: "R$ 10.000", status: "Vencida", receiptGenerated: false },
-      { number: "4/4", dueDate: "20/06/2026", value: "R$ 10.000", status: "Pendente", receiptGenerated: false },
-    ],
-  },
-  {
-    id: "4",
-    client: "Juliana Costa",
-    eventType: "Adulto",
-    services: ["Buffet", "Decoração", "Combo"],
-    totalValue: "R$ 22.000",
-    downPayment: "R$ 22.000",
-    installments: "1/1",
-    nextDueDate: "-",
-    status: "Pago",
-    hasCombo: true,
-    comboDiscount: "5%",
-    installmentList: [
-      { number: "1/1", dueDate: "01/05/2026", value: "R$ 22.000", status: "Pago", method: "PIX", receiptGenerated: true },
-    ],
-  },
-];
-
-const recentPayments: RecentPayment[] = [
-  { id: "1", client: "Juliana Costa", method: "PIX", value: "R$ 22.000", date: "Hoje, 14:30", eventType: "Adulto", services: ["Buffet", "Decoração", "Combo"], installmentNumber: "1/1", remainingBalance: "R$ 0" },
-  { id: "2", client: "PrimeTech", method: "Transferência", value: "R$ 5.000", date: "Ontem, 16:45", eventType: "Corporativo", services: ["Buffet", "Fotografia", "Combo"], installmentNumber: "2/4", remainingBalance: "R$ 15.000" },
-  { id: "3", client: "Ana & João", method: "Cartão de Crédito", value: "R$ 5.000", date: "15/05/2026", eventType: "Casamento", services: ["Buffet", "Decoração", "Fotografia", "Combo"], installmentNumber: "3/10", remainingBalance: "R$ 25.000" },
-  { id: "4", client: "Infantil Miguel", method: "PIX", value: "R$ 5.000", date: "12/05/2026", eventType: "Infantil", services: ["Buffet"], installmentNumber: "1/5", remainingBalance: "R$ 8.000" },
-];
-
-const historyEntries: HistoryEntry[] = [
-  { id: "h1", type: "recibo", description: "Recibo emitido — Juliana Costa (Parcela 1/1)", date: "Hoje, 14:31", value: "R$ 22.000" },
-  { id: "h2", type: "baixa", description: "Baixa registrada — PrimeTech (Parcela 2/4)", date: "Ontem, 16:46", value: "R$ 5.000" },
-  { id: "h3", type: "cobrança", description: "Cobrança emitida — Infantil Miguel (Extra decoração)", date: "14/05/2026", value: "R$ 800" },
-  { id: "h4", type: "recibo", description: "Recibo emitido — Ana & João (Parcela 3/10)", date: "15/05/2026", value: "R$ 5.000" },
-  { id: "h5", type: "baixa", description: "Baixa registrada — Ana & João (Parcela 2/10)", date: "10/04/2026", value: "R$ 5.000" },
-];
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const statusStyles: Record<FinanceStatus, string> = {
@@ -199,14 +102,7 @@ const historyTypeStyles = {
   baixa: { color: "bg-green-500/10 text-green-400", icon: <ArrowDownRight className="w-3.5 h-3.5" />, label: "Baixa" },
 };
 
-// ─── Summary Data por Filtro ─────────────────────────────────────────────────
-const summaryData: Record<FilterType, { receita: string; receber: string; pagar: string; parcelas: number }> = {
-  Todos:     { receita: "R$ 120.000", receber: "R$ 45.000", pagar: "R$ 18.500", parcelas: 8 },
-  Buffet:    { receita: "R$ 72.000",  receber: "R$ 28.000", pagar: "R$ 12.000", parcelas: 5 },
-  Decoração: { receita: "R$ 24.500",  receber: "R$ 10.500", pagar: "R$ 4.200",  parcelas: 2 },
-  Fotografia:{ receita: "R$ 14.000",  receber: "R$ 5.500",  pagar: "R$ 1.800",  parcelas: 1 },
-  Combo:     { receita: "R$ 9.500",   receber: "R$ 1.000",  pagar: "R$ 500",    parcelas: 0 },
-};
+interface FinanceSummary { receitaMes: string; aReceber: string; parcelasPendentes: number; }
 
 const filterOptions: FilterType[] = ["Todos", "Buffet", "Decoração", "Fotografia", "Combo"];
 
@@ -262,6 +158,22 @@ export default function FinanceiroPage() {
   const [chargeConfirmed, setChargeConfirmed] = useState(false);
   const [emitReceipt, setEmitReceipt] = useState(true);
 
+  const [records, setRecords] = useState<FinanceRecord[]>([]);
+  const [recentPayments, setRecentPayments] = useState<RecentPayment[]>([]);
+  const [financeSummary, setFinanceSummary] = useState<FinanceSummary>({ receitaMes: "—", aReceber: "—", parcelasPendentes: 0 });
+
+  useEffect(() => {
+    fetch("/api/financeiro")
+      .then(r => r.json())
+      .then(json => {
+        if (!json.ok) return;
+        setRecords(json.data.contratos as FinanceRecord[]);
+        setRecentPayments(json.data.pagamentosRecentes as RecentPayment[]);
+        setFinanceSummary(json.data.summary as FinanceSummary);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="flex flex-col bg-[var(--bg-primary)] p-4 md:p-8 animate-fade-in-up overflow-y-auto min-h-full">
 
@@ -295,10 +207,10 @@ export default function FinanceiroPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {(
           [
-            { label: "Receita do mês",    value: summaryData[activeFilter].receita,             Icon: TrendingUp,  color: "green"  },
-            { label: "Contas a receber",  value: summaryData[activeFilter].receber,             Icon: DollarSign,  color: "blue"   },
-            { label: "Contas a pagar",    value: summaryData[activeFilter].pagar,               Icon: TrendingDown, color: "red"   },
-            { label: "Parcelas pendentes",value: String(summaryData[activeFilter].parcelas),    Icon: AlertCircle, color: "yellow" },
+            { label: "Receita do mês",    value: financeSummary.receitaMes,                    Icon: TrendingUp,  color: "green"  },
+            { label: "Contas a receber",  value: financeSummary.aReceber,                      Icon: DollarSign,  color: "blue"   },
+            { label: "Contas a pagar",    value: "—",                                          Icon: TrendingDown, color: "red"   },
+            { label: "Parcelas pendentes",value: String(financeSummary.parcelasPendentes),      Icon: AlertCircle, color: "yellow" },
           ] as const
         ).map(({ label, value, Icon, color }) => (
           <div key={label} className="bg-[var(--bg-card)] p-5 rounded-xl border border-[var(--border-default)] shadow-card flex items-center gap-4 transition-all hover:bg-[var(--bg-card-hover)] hover:shadow-card-hover">
@@ -386,7 +298,7 @@ export default function FinanceiroPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-default)] text-sm">
-                  {mockRecords.map((record) => (
+                  {records.map((record) => (
                     <tr key={record.id} className="hover:bg-[var(--bg-card-hover)] transition-colors group">
                       <td className="px-5 py-4">
                         <div className="flex flex-col gap-0.5">
@@ -445,7 +357,7 @@ export default function FinanceiroPage() {
 
             {/* Mobile */}
             <div className="lg:hidden divide-y divide-[var(--border-default)]">
-              {mockRecords.map((record) => (
+              {records.map((record) => (
                 <div key={record.id} className="p-4 hover:bg-[var(--bg-card-hover)] transition-colors">
                   <div className="flex justify-between items-start mb-3">
                     <div>
@@ -492,6 +404,9 @@ export default function FinanceiroPage() {
           </div>
 
           <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] shadow-card overflow-hidden flex flex-col divide-y divide-[var(--border-default)]">
+            {recentPayments.length === 0 && (
+              <p className="p-6 text-center text-sm text-[var(--text-muted)]">Nenhum pagamento registrado ainda.</p>
+            )}
             {recentPayments.map((payment) => (
               <div key={payment.id} className="p-4 hover:bg-[var(--bg-card-hover)] transition-colors group">
                 <div className="flex items-start justify-between gap-2">
@@ -538,22 +453,27 @@ export default function FinanceiroPage() {
         </div>
         <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] shadow-card overflow-hidden">
           <div className="divide-y divide-[var(--border-default)]">
-            {historyEntries.map((entry) => {
-              const t = historyTypeStyles[entry.type];
+            {recentPayments.length === 0 ? (
+              <div className="px-5 py-8 flex flex-col items-center justify-center gap-2 text-[var(--text-muted)]">
+                <History className="w-6 h-6 opacity-40" />
+                <p className="text-sm">Nenhum lançamento registrado ainda.</p>
+              </div>
+            ) : recentPayments.slice(0, 5).map((p) => {
+              const t = historyTypeStyles["baixa"];
               return (
-                <div key={entry.id} className="px-5 py-3.5 flex items-center justify-between hover:bg-[var(--bg-card-hover)] transition-colors gap-4">
+                <div key={p.id} className="px-5 py-3.5 flex items-center justify-between hover:bg-[var(--bg-card-hover)] transition-colors gap-4">
                   <div className="flex items-center gap-3">
                     <div className={`p-1.5 rounded-lg ${t.color}`}>{t.icon}</div>
                     <div>
-                      <p className="text-sm text-[var(--text-primary)]">{entry.description}</p>
+                      <p className="text-sm text-[var(--text-primary)]">{p.client} — {p.method}</p>
                       <p className="text-xs text-[var(--text-muted)] mt-0.5 flex items-center gap-1">
-                        <CalendarDays className="w-3 h-3" /> {entry.date}
+                        <CalendarDays className="w-3 h-3" /> {p.date}
                       </p>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{entry.value}</span>
-                    <p className={`text-[9px] font-bold uppercase tracking-wide mt-0.5 ${t.color.replace("bg-", "text-").split(" ")[0]}`}>{t.label}</p>
+                    <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{p.value}</span>
+                    <p className="text-[9px] font-bold uppercase tracking-wide mt-0.5 text-green-400">Baixa</p>
                   </div>
                 </div>
               );
@@ -801,7 +721,7 @@ export default function FinanceiroPage() {
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Cliente</label>
                       <select className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors">
-                        {mockRecords.map((r) => (
+                        {records.map((r) => (
                           <option key={r.id} value={r.id}>{r.client} — {r.eventType}</option>
                         ))}
                       </select>

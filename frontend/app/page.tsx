@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-import { 
-  TrendingUp, 
-  Users, 
-  CalendarCheck, 
-  Target, 
+import { useState, useEffect } from "react";
+import {
+  TrendingUp,
+  Users,
+  CalendarCheck,
+  Target,
   Sparkles,
   BarChart3,
   PieChart,
@@ -35,142 +35,80 @@ const generateSmoothPath = (points: number[], width: number, height: number, max
   return path;
 };
 
-// Types
 type FilterType = "Todos" | "Buffet" | "Decoração" | "Fotografia";
 
-interface DashboardMockData {
-  kpis: {
-    receita: string;
-    receitaGrowth: string;
-    leads: string;
-    leadsGrowth: string;
-    eventos: string;
-    eventosDesc: string;
-    conversao: string;
-    conversaoGrowth: string;
-  };
-  receita: number[];
-  metricas: {
-    maiorMes: string;
-    crescimento: string;
-    ticketMedio: string;
-  };
-  eventos: { label: string; pct: string; width: string; color: string }[];
-  insights: string[];
+interface DbData {
+  receitaMes: number;
+  leadsNoMes: number;
+  eventosFechados: number;
+  eventosTotais: number;
+  eventosPorTipo: Record<string, number>;
+  receitaMesAnterior: number;
+  leadsMesAnterior: number;
 }
 
-// Mock Data structure responsive to filters
-const MOCK_DATA: Record<FilterType, DashboardMockData> = {
-  "Todos": {
-    kpis: {
-      receita: "R$ 142.500",
-      receitaGrowth: "+15.2% em relação a abril",
-      leads: "128",
-      leadsGrowth: "+8% em relação a abril",
-      eventos: "24",
-      eventosDesc: "4 casamentos, 12 infantis, 8 corp.",
-      conversao: "18.7%",
-      conversaoGrowth: "+2.1% em relação a abril",
-    },
-    receita: [45, 60, 55, 80, 100, 142],
-    metricas: { maiorMes: "Maio", crescimento: "+215%", ticketMedio: "R$ 22.400" },
-    eventos: [
-      { label: "Infantil", pct: "45%", width: "45%", color: "bg-blue-400" },
-      { label: "Casamento", pct: "30%", width: "30%", color: "bg-pink-400" },
-      { label: "Corporativo", pct: "15%", width: "15%", color: "bg-green-400" },
-      { label: "Adulto", pct: "10%", width: "10%", color: "bg-purple-400" },
-    ],
-    insights: [
-      "<span class='font-bold text-[var(--gold-400)]'>Maio</span> foi o mês com maior volume de fechamento de <span class='font-semibold'>Casamentos</span> no 1º semestre.",
-      "A IA de atendimento respondeu e qualificou <span class='font-bold text-[var(--gold-400)]'>18 leads</span> fora do horário comercial esta semana.",
-      "A procura por <span class='font-semibold'>Eventos Corporativos</span> cresceu <span class='font-bold text-green-400'>22%</span> após a última campanha no LinkedIn."
-    ]
-  },
-  "Buffet": {
-    kpis: {
-      receita: "R$ 110.000",
-      receitaGrowth: "+12.4% em relação a abril",
-      leads: "85",
-      leadsGrowth: "+5% em relação a abril",
-      eventos: "18",
-      eventosDesc: "8 corporativos, 6 casamentos, 4 infantis",
-      conversao: "21.1%",
-      conversaoGrowth: "+1.5% em relação a abril",
-    },
-    receita: [35, 45, 40, 65, 80, 110],
-    metricas: { maiorMes: "Maio", crescimento: "+214%", ticketMedio: "R$ 15.000" },
-    eventos: [
-      { label: "Casamento", pct: "50%", width: "50%", color: "bg-pink-400" },
-      { label: "Corporativo", pct: "25%", width: "25%", color: "bg-green-400" },
-      { label: "Infantil", pct: "15%", width: "15%", color: "bg-blue-400" },
-      { label: "Adulto", pct: "10%", width: "10%", color: "bg-purple-400" },
-    ],
-    insights: [
-      "O cardápio <span class='font-bold text-[var(--gold-400)]'>Premium Diamond</span> foi o mais escolhido nos casamentos recentes.",
-      "Identificamos que <span class='font-bold text-[var(--gold-400)]'>85%</span> dos leads de corporativo fecham apenas o serviço de Buffet.",
-      "Ticket médio do Buffet subiu <span class='font-bold text-green-400'>12%</span> desde a última atualização do menu."
-    ]
-  },
-  "Decoração": {
-    kpis: {
-      receita: "R$ 25.000",
-      receitaGrowth: "+22.5% em relação a abril",
-      leads: "42",
-      leadsGrowth: "+15% em relação a abril",
-      eventos: "12",
-      eventosDesc: "8 casamentos, 4 infantis",
-      conversao: "28.5%",
-      conversaoGrowth: "+4.2% em relação a abril",
-    },
-    receita: [8, 12, 10, 15, 18, 25],
-    metricas: { maiorMes: "Maio", crescimento: "+212%", ticketMedio: "R$ 5.500" },
-    eventos: [
-      { label: "Casamento", pct: "60%", width: "60%", color: "bg-pink-400" },
-      { label: "Infantil", pct: "25%", width: "25%", color: "bg-blue-400" },
-      { label: "Adulto", pct: "15%", width: "15%", color: "bg-purple-400" },
-      { label: "Corporativo", pct: "0%", width: "0%", color: "bg-green-400" },
-    ],
-    insights: [
-      "Projetos de <span class='font-bold text-[var(--gold-400)]'>Cenografia Floral</span> são o principal atrativo para os leads de Casamento.",
-      "Maioria dos clientes de Festa Infantil estão contratando os pacotes de Decoração com Balões.",
-      "Você poderia aumentar as vendas oferecendo um <span class='font-bold text-green-400'>Combo de Decoração + Buffet</span> para os Eventos Corporativos."
-    ]
-  },
-  "Fotografia": {
-    kpis: {
-      receita: "R$ 7.500",
-      receitaGrowth: "+50.0% em relação a abril",
-      leads: "20",
-      leadsGrowth: "-5% em relação a abril",
-      eventos: "5",
-      eventosDesc: "4 casamentos, 1 adulto",
-      conversao: "25.0%",
-      conversaoGrowth: "+10.0% em relação a abril",
-    },
-    receita: [2, 3, 5, 0, 2, 7],
-    metricas: { maiorMes: "Maio", crescimento: "+250%", ticketMedio: "R$ 3.500" },
-    eventos: [
-      { label: "Casamento", pct: "80%", width: "80%", color: "bg-pink-400" },
-      { label: "Adulto", pct: "20%", width: "20%", color: "bg-purple-400" },
-      { label: "Infantil", pct: "0%", width: "0%", color: "bg-blue-400" },
-      { label: "Corporativo", pct: "0%", width: "0%", color: "bg-green-400" },
-    ],
-    insights: [
-      "A fotografia é vendida quase exclusivamente para <span class='font-bold text-[var(--gold-400)]'>Casamentos</span> (80% das vendas).",
-      "O tempo médio de fechamento reduz em <span class='font-bold text-green-400'>15%</span> ao enviar o portfólio digital na primeira mensagem.",
-      "Nenhum evento infantil contratou Fotografia este mês. Avalie revisar o material de divulgação."
-    ]
-  }
-};
+function formatBRL(cents: number): string {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents);
+}
+
+function growthStr(current: number, previous: number, mesAnterior: string): string {
+  if (previous === 0) return current > 0 ? "Novo dado este mês" : "Sem dados ainda";
+  const pct = ((current - previous) / previous) * 100;
+  const sign = pct >= 0 ? "+" : "";
+  return `${sign}${pct.toFixed(1)}% em relação a ${mesAnterior}`;
+}
 
 const filterOptions: FilterType[] = ["Todos", "Buffet", "Decoração", "Fotografia"];
 const monthsLabels = ["Dez", "Jan", "Fev", "Mar", "Abr", "Mai"];
 
 export default function DashboardAnalytics() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("Todos");
-  
-  const currentData = MOCK_DATA[activeFilter];
-  const maxVal = 150; // Reference max value for chart heights
+  const [dbData, setDbData] = useState<DbData | null>(null);
+
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then((r) => r.json())
+      .then((json) => { if (json.ok) setDbData(json.data); })
+      .catch(() => {});
+  }, []);
+
+  const now = new Date();
+  const mesAnteriorLabel = now.toLocaleDateString("pt-BR", { month: "long" });
+
+  const kpis = {
+    receita: dbData ? formatBRL(dbData.receitaMes) : "—",
+    receitaGrowth: dbData ? growthStr(dbData.receitaMes, dbData.receitaMesAnterior, mesAnteriorLabel) : "Carregando...",
+    leads: dbData ? String(dbData.leadsNoMes) : "—",
+    leadsGrowth: dbData ? growthStr(dbData.leadsNoMes, dbData.leadsMesAnterior, mesAnteriorLabel) : "Carregando...",
+    eventos: dbData ? String(dbData.eventosFechados) : "—",
+    eventosDesc: dbData
+      ? Object.entries(dbData.eventosPorTipo).slice(0, 3).map(([t, c]) => `${c} ${t.toLowerCase()}`).join(", ") || "Sem eventos"
+      : "Carregando...",
+    conversao: dbData && dbData.eventosTotais > 0
+      ? `${((dbData.eventosFechados / dbData.eventosTotais) * 100).toFixed(1)}%`
+      : "—",
+    conversaoGrowth: dbData ? `${dbData.eventosFechados} fechados de ${dbData.eventosTotais} totais` : "Carregando...",
+  };
+
+  const eventTypeColors: Record<string, string> = {
+    Casamento: "bg-pink-400", Infantil: "bg-blue-400",
+    Corporativo: "bg-green-400", Adulto: "bg-purple-400",
+  };
+
+  const totalEventos = dbData ? Object.values(dbData.eventosPorTipo).reduce((s, v) => s + v, 0) : 0;
+  const eventosBars = dbData
+    ? Object.entries(dbData.eventosPorTipo)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([label, count]) => ({
+          label,
+          pct: totalEventos > 0 ? `${Math.round((count / totalEventos) * 100)}%` : "0%",
+          width: totalEventos > 0 ? `${Math.round((count / totalEventos) * 100)}%` : "0%",
+          color: eventTypeColors[label] ?? "bg-gray-400",
+        }))
+    : [];
+
+  const maxVal = 10;
 
   return (
     <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 animate-fade-in-up overflow-y-auto h-full">
@@ -236,10 +174,10 @@ export default function DashboardAnalytics() {
             </div>
           </div>
           <div>
-            <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{currentData.kpis.receita}</p>
-            <p className={`text-xs flex items-center gap-1 mt-1 font-medium transition-colors ${currentData.kpis.receitaGrowth.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-              <ArrowUpRight className={`w-3 h-3 ${currentData.kpis.receitaGrowth.startsWith('-') ? 'rotate-90' : ''}`} /> 
-              {currentData.kpis.receitaGrowth}
+            <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{kpis.receita}</p>
+            <p className={`text-xs flex items-center gap-1 mt-1 font-medium transition-colors ${kpis.receitaGrowth.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+              <ArrowUpRight className={`w-3 h-3 ${kpis.receitaGrowth.startsWith('-') ? 'rotate-90' : ''}`} />
+              {kpis.receitaGrowth}
             </p>
           </div>
         </div>
@@ -253,10 +191,10 @@ export default function DashboardAnalytics() {
             </div>
           </div>
           <div>
-            <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{currentData.kpis.leads}</p>
-            <p className={`text-xs flex items-center gap-1 mt-1 font-medium transition-colors ${currentData.kpis.leadsGrowth.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-              <ArrowUpRight className={`w-3 h-3 ${currentData.kpis.leadsGrowth.startsWith('-') ? 'rotate-90' : ''}`} /> 
-              {currentData.kpis.leadsGrowth}
+            <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{kpis.leads}</p>
+            <p className={`text-xs flex items-center gap-1 mt-1 font-medium transition-colors ${kpis.leadsGrowth.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+              <ArrowUpRight className={`w-3 h-3 ${kpis.leadsGrowth.startsWith('-') ? 'rotate-90' : ''}`} />
+              {kpis.leadsGrowth}
             </p>
           </div>
         </div>
@@ -270,9 +208,9 @@ export default function DashboardAnalytics() {
             </div>
           </div>
           <div>
-            <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{currentData.kpis.eventos}</p>
+            <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{kpis.eventos}</p>
             <p className="text-xs text-[var(--text-muted)] mt-1 font-medium transition-colors">
-              {currentData.kpis.eventosDesc}
+              {kpis.eventosDesc}
             </p>
           </div>
         </div>
@@ -286,10 +224,9 @@ export default function DashboardAnalytics() {
             </div>
           </div>
           <div>
-            <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{currentData.kpis.conversao}</p>
-            <p className={`text-xs flex items-center gap-1 mt-1 font-medium transition-colors ${currentData.kpis.conversaoGrowth.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-              <ArrowUpRight className={`w-3 h-3 ${currentData.kpis.conversaoGrowth.startsWith('-') ? 'rotate-90' : ''}`} /> 
-              {currentData.kpis.conversaoGrowth}
+            <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{kpis.conversao}</p>
+            <p className="text-xs text-[var(--text-muted)] mt-1 font-medium transition-colors">
+              {kpis.conversaoGrowth}
             </p>
           </div>
         </div>
@@ -305,14 +242,27 @@ export default function DashboardAnalytics() {
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {currentData.insights.map((insight, idx) => (
-            <div key={idx} className="bg-[var(--bg-primary)]/60 backdrop-blur-sm p-4 rounded-lg border border-[var(--border-subtle)] transition-all hover:border-[var(--gold-500)]/30 shadow-sm">
-              <p 
-                className="text-sm text-[var(--text-primary)] leading-relaxed" 
-                dangerouslySetInnerHTML={{ __html: insight }}
-              />
-            </div>
-          ))}
+          {dbData ? (
+            <>
+              <div className="bg-[var(--bg-primary)]/60 backdrop-blur-sm p-4 rounded-lg border border-[var(--border-subtle)] transition-all hover:border-[var(--gold-500)]/30 shadow-sm">
+                <p className="text-sm text-[var(--text-primary)] leading-relaxed">
+                  Total de <span className="font-bold text-[var(--gold-400)]">{dbData.eventosTotais}</span> eventos cadastrados, com <span className="font-bold text-[var(--gold-400)]">{dbData.eventosFechados}</span> fechados até o momento.
+                </p>
+              </div>
+              <div className="bg-[var(--bg-primary)]/60 backdrop-blur-sm p-4 rounded-lg border border-[var(--border-subtle)] transition-all hover:border-[var(--gold-500)]/30 shadow-sm">
+                <p className="text-sm text-[var(--text-primary)] leading-relaxed">
+                  <span className="font-bold text-[var(--gold-400)]">{dbData.leadsNoMes}</span> novos clientes captados este mês. Mês anterior: <span className="font-semibold">{dbData.leadsMesAnterior}</span>.
+                </p>
+              </div>
+              <div className="bg-[var(--bg-primary)]/60 backdrop-blur-sm p-4 rounded-lg border border-[var(--border-subtle)] transition-all hover:border-[var(--gold-500)]/30 shadow-sm">
+                <p className="text-sm text-[var(--text-primary)] leading-relaxed">
+                  Receita este mês: <span className="font-bold text-[var(--gold-400)]">{formatBRL(dbData.receitaMes)}</span>. Mês anterior: <span className="font-semibold">{formatBRL(dbData.receitaMesAnterior)}</span>.
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="col-span-3 text-center py-6 text-[var(--text-muted)] text-sm">Carregando insights...</div>
+          )}
         </div>
       </section>
 
@@ -329,18 +279,26 @@ export default function DashboardAnalytics() {
             {/* Secondary metrics */}
             <div className="flex gap-4 text-xs">
               <div className="flex flex-col">
-                <span className="text-[var(--text-muted)] uppercase font-bold text-[9px] tracking-wider">Maior Mês</span>
-                <span className="text-[var(--text-primary)] font-bold">{currentData.metricas.maiorMes}</span>
+                <span className="text-[var(--text-muted)] uppercase font-bold text-[9px] tracking-wider">Receita Mês</span>
+                <span className="text-[var(--text-primary)] font-bold">{dbData ? formatBRL(dbData.receitaMes) : "—"}</span>
               </div>
               <div className="w-px h-6 bg-[var(--border-subtle)]" />
               <div className="flex flex-col">
                 <span className="text-[var(--text-muted)] uppercase font-bold text-[9px] tracking-wider">Crescimento</span>
-                <span className="text-emerald-400 font-bold">{currentData.metricas.crescimento}</span>
+                <span className="text-emerald-400 font-bold">
+                  {dbData && dbData.receitaMesAnterior > 0
+                    ? `${(((dbData.receitaMes - dbData.receitaMesAnterior) / dbData.receitaMesAnterior) * 100).toFixed(1)}%`
+                    : "—"}
+                </span>
               </div>
               <div className="w-px h-6 bg-[var(--border-subtle)]" />
               <div className="flex flex-col">
                 <span className="text-[var(--text-muted)] uppercase font-bold text-[9px] tracking-wider">Ticket Médio</span>
-                <span className="text-[var(--gold-300)] font-bold">{currentData.metricas.ticketMedio}</span>
+                <span className="text-[var(--gold-300)] font-bold">
+                  {dbData && dbData.eventosFechados > 0
+                    ? formatBRL(Math.round(dbData.receitaMes / dbData.eventosFechados))
+                    : "—"}
+                </span>
               </div>
             </div>
           </div>
@@ -360,8 +318,8 @@ export default function DashboardAnalytics() {
                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                   </filter>
                 </defs>
-                <path 
-                  d={generateSmoothPath(currentData.receita, 100, 100, maxVal)} 
+                <path
+                  d={generateSmoothPath([], 100, 100, maxVal)}
                   vectorEffect="non-scaling-stroke"
                   fill="none" 
                   stroke="url(#lineGrad)" 
@@ -372,26 +330,14 @@ export default function DashboardAnalytics() {
               </svg>
             </div>
 
-            {/* Bars */}
-            {currentData.receita.map((height, i) => (
+            {/* Bars — histórico mensal não disponível ainda */}
+            {monthsLabels.map((label, i) => (
               <div key={i} className="flex flex-col items-center gap-2 w-full group relative z-10">
-                {/* Visual tooltip */}
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 text-[11px] font-bold text-[var(--text-primary)] bg-[var(--bg-secondary)] border border-[var(--border-subtle)] px-2 py-1 rounded shadow-lg z-20 whitespace-nowrap">
-                  R$ {height}k
-                </span>
-                
-                {/* Bar */}
-                <div 
-                  className={`w-full max-w-[48px] rounded-t-md transition-all duration-700 ease-out border-t border-[var(--border-subtle)]/30
-                    ${i === 5 
-                      ? 'bg-gradient-to-t from-[var(--gold-600)]/20 to-[var(--gold-400)]/40 border-t-[var(--gold-400)] shadow-[0_-4px_15px_rgba(212,169,55,0.15)]' 
-                      : 'bg-[var(--bg-secondary)]/50 group-hover:bg-[var(--bg-secondary)]'
-                    }`} 
-                  style={{ height: `${(height / maxVal) * 100}%` }}
+                <div
+                  className="w-full max-w-[48px] rounded-t-md bg-[var(--bg-secondary)]/30 border-t border-[var(--border-subtle)]/20"
+                  style={{ height: "8%" }}
                 />
-                <span className={`text-xs font-medium transition-colors ${i === 5 ? 'text-[var(--gold-300)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]'}`}>
-                  {monthsLabels[i]}
-                </span>
+                <span className="text-xs font-medium text-[var(--text-muted)]">{label}</span>
               </div>
             ))}
           </div>
@@ -407,20 +353,22 @@ export default function DashboardAnalytics() {
           </div>
           
           <div className="flex-1 flex flex-col justify-center gap-6">
-            {currentData.eventos.map((evento, i) => (
+            {eventosBars.length > 0 ? eventosBars.map((evento, i) => (
               <div key={i} className="group">
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-[var(--text-primary)] font-medium group-hover:text-[var(--gold-300)] transition-colors">{evento.label}</span>
                   <span className="text-[var(--text-secondary)] font-mono font-bold">{evento.pct}</span>
                 </div>
                 <div className="w-full bg-[var(--bg-primary)] rounded-full h-2.5 overflow-hidden border border-[var(--border-subtle)]/20">
-                  <div 
-                    className={`${evento.color} h-2.5 rounded-full transition-all duration-700 ease-out`} 
-                    style={{ width: evento.width }} 
+                  <div
+                    className={`${evento.color} h-2.5 rounded-full transition-all duration-700 ease-out`}
+                    style={{ width: evento.width }}
                   />
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-center text-sm text-[var(--text-muted)] py-4">Sem eventos cadastrados</p>
+            )}
           </div>
         </div>
 

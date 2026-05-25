@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useCrmData, getBuffetRevenue, EXPENSE_CATEGORIES, CATEGORY_COLORS, isoToDisplayDate, dateToMonth } from "../context/CrmDataContext";
+import { useState, useEffect } from "react";
+import { useCrmData, EXPENSE_CATEGORIES, CATEGORY_COLORS, isoToDisplayDate, dateToMonth } from "../context/CrmDataContext";
 import type { ExpenseCategory } from "../context/CrmDataContext";
 import {
   TrendingUp,
@@ -149,14 +149,48 @@ export default function DistribuicaoBuffetPage() {
 
   const [selectedMonth, setSelectedMonth] = useState<string>("Maio 2026");
   const [activeData, setActiveData] = useState<MonthlyData>(mockMonthlyData["Maio 2026"]);
+  const [apiRevenue, setApiRevenue] = useState(0);
+  const [apiDespesaList, setApiDespesaList] = useState<{ categoria: string; valor: number }[]>([]);
 
-  // Derived financial values from shared context
-  const buffetRevenue = getBuffetRevenue(selectedMonth);
-  const buffetTotalExpenses = getBuffetExpensesByMonth(selectedMonth).reduce((s, e) => s + e.value, 0);
+  function monthLabelToParam(label: string): string {
+    const map: Record<string, string> = {
+      "Janeiro": "01", "Fevereiro": "02", "Março": "03", "Abril": "04",
+      "Maio": "05", "Junho": "06", "Julho": "07", "Agosto": "08",
+      "Setembro": "09", "Outubro": "10", "Novembro": "11", "Dezembro": "12",
+    };
+    const [name, year] = label.split(" ");
+    return `${year}-${map[name] ?? "01"}`;
+  }
+
+  useEffect(() => {
+    const param = monthLabelToParam(selectedMonth);
+    fetch(`/api/socias-caixa?month=${param}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.ok) {
+          setApiRevenue(json.data.receita);
+          setApiDespesaList(
+            Object.entries(json.data.categorias as Record<string, number>).map(([categoria, valor]) => ({ categoria, valor }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, [selectedMonth]);
+
+  // Financial values: API data + in-session context expenses
+  const contextExpenses = getBuffetExpensesByMonth(selectedMonth);
+  const buffetRevenue = apiRevenue;
+  const buffetTotalExpenses =
+    contextExpenses.reduce((s, e) => s + e.value, 0) +
+    apiDespesaList.reduce((s, d) => s + d.valor, 0);
   const buffetNetProfit = buffetRevenue - buffetTotalExpenses;
-  const buffetCategoryTotals = getBuffetCategoriesForMonth(selectedMonth);
+  const contextCategories = getBuffetCategoriesForMonth(selectedMonth);
+  const mergedCategories: Record<string, number> = { ...contextCategories };
+  for (const d of apiDespesaList) {
+    mergedCategories[d.categoria] = (mergedCategories[d.categoria] ?? 0) + d.valor;
+  }
   const buffetCategoriesForDisplay = EXPENSE_CATEGORIES
-    .map((name) => ({ name, value: buffetCategoryTotals[name], color: CATEGORY_COLORS[name] }))
+    .map((name) => ({ name, value: mergedCategories[name] ?? 0, color: CATEGORY_COLORS[name] }))
     .filter((c) => c.value > 0);
 
   // Expense modal
@@ -195,6 +229,19 @@ export default function DistribuicaoBuffetPage() {
       observations: expenseObservations,
       hasReceipt: expenseHasReceipt,
     });
+    fetch("/api/despesas-buffet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        descricao: expenseDesc,
+        categoria: expenseCategory,
+        fornecedor: expenseSupplier,
+        valor: val,
+        formaPagamento: expensePaymentMethod,
+        observacoes: expenseObservations,
+        data: expenseDate,
+      }),
+    }).catch(() => {});
     addBuffetLog(`[CAI] Despesa registrada no módulo Buffet: ${expenseDesc} — ${formatCurrency(val)}.`);
     setExpenseConfirmed(true);
   }

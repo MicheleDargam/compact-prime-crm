@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Users, 
   Briefcase, 
@@ -59,63 +59,17 @@ interface ToastMessage {
   message: string;
 }
 
-// Initial Data
-const initialColaboradores: Colaborador[] = [
-  { id: "c1", nome: "Carlos Henrique", funcao: "Garçom", telefone: "(11) 98765-4321", status: "Ativo", disponibilidade: "Disponível" },
-  { id: "c2", nome: "Juliana Mendes", funcao: "Decoração", telefone: "(11) 97654-3210", status: "Ativo", disponibilidade: "Evento agendado" },
-  { id: "c3", nome: "Marcos Vinícius", funcao: "Recepção", telefone: "(11) 96543-2109", status: "Ativo", disponibilidade: "Disponível" },
-  { id: "c4", nome: "Ana Beatriz", funcao: "Cozinha", telefone: "(11) 95432-1098", status: "Ativo", disponibilidade: "Evento agendado" },
-  { id: "c5", nome: "Ricardo Alves", funcao: "Montagem", telefone: "(11) 94321-0987", status: "Ativo", disponibilidade: "Disponível" },
-  { id: "c6", nome: "Sandra Souza", funcao: "Limpeza", telefone: "(11) 93210-9876", status: "Folga", disponibilidade: "Indisponível" },
-  { id: "c7", nome: "Felipe Guedes", funcao: "Fotografia", telefone: "(11) 92109-8765", status: "Ocupado", disponibilidade: "Evento agendado" },
-  { id: "c8", nome: "Mariana Costa", funcao: "Recepção", telefone: "(11) 91098-7654", status: "Ativo", disponibilidade: "Disponível" }
-];
-
-const initialEventos: Evento[] = [
-  {
-    id: "e1",
-    nome: "Casamento Ana & João",
-    data: "23/05/2026 (Sábado)",
-    colaboradores: [
-      { nome: "Carlos Henrique", funcao: "Garçom" },
-      { nome: "Juliana Mendes", funcao: "Decoração" },
-      { nome: "Marcos Vinícius", funcao: "Recepção" }
-    ]
-  },
-  {
-    id: "e2",
-    nome: "Bodas de Ouro Cecília & Nelson",
-    data: "24/05/2026 (Domingo)",
-    colaboradores: [
-      { nome: "Ana Beatriz", funcao: "Cozinha" },
-      { nome: "Felipe Guedes", funcao: "Fotografia" }
-    ]
-  },
-  {
-    id: "e3",
-    nome: "Coquetel Corporativo AlphaTech",
-    data: "27/05/2026 (Quarta-feira)",
-    colaboradores: [
-      { nome: "Carlos Henrique", funcao: "Garçom" },
-      { nome: "Ricardo Alves", funcao: "Montagem" }
-    ]
-  }
-];
-
-const initialRegistros: RegistroHora[] = [
-  { id: "r1", funcionario: "Carlos Henrique", evento: "Casamento Ana & João", horas: 8, valor: 250, status: "Pago" },
-  { id: "r2", funcionario: "Juliana Mendes", evento: "Casamento Ana & João", horas: 10, valor: 450, status: "Pendente" },
-  { id: "r3", funcionario: "Marcos Vinícius", evento: "Casamento Ana & João", horas: 6, valor: 200, status: "Parcial" },
-  { id: "r4", funcionario: "Ana Beatriz", evento: "Bodas de Ouro Cecília & Nelson", horas: 8, valor: 300, status: "Pago" },
-  { id: "r5", funcionario: "Felipe Guedes", evento: "Bodas de Ouro Cecília & Nelson", horas: 5, valor: 600, status: "Pendente" },
-  { id: "r6", funcionario: "Ricardo Alves", evento: "Coquetel Corporativo AlphaTech", horas: 7, valor: 220, status: "Pago" }
-];
 
 export default function FuncionariosPage() {
-  // In-Memory Interactive State
-  const [colaboradores, setColaboradores] = useState<Colaborador[]>(initialColaboradores);
-  const [eventos, setEventos] = useState<Evento[]>(initialEventos);
-  const [registros, setRegistros] = useState<RegistroHora[]>(initialRegistros);
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [registros, setRegistros] = useState<RegistroHora[]>([]);
+
+  useEffect(() => {
+    fetch("/api/funcionarios").then(r => r.json()).then(json => { if (json.ok) setColaboradores(json.data as Colaborador[]); }).catch(() => {});
+    fetch("/api/funcionarios/eventos").then(r => r.json()).then(json => { if (json.ok) setEventos(json.data as Evento[]); }).catch(() => {});
+    fetch("/api/funcionarios/registros").then(r => r.json()).then(json => { if (json.ok) setRegistros(json.data as RegistroHora[]); }).catch(() => {});
+  }, []);
   
   // UI State: Filtering
   const [searchTerm, setSearchTerm] = useState("");
@@ -137,11 +91,11 @@ export default function FuncionariosPage() {
   const [newEmpDisp, setNewEmpDisp] = useState<DispColaborador>("Disponível");
 
   // Form State: Scale Event
-  const [scaleEventId, setScaleEventId] = useState(initialEventos[0]?.id || "");
-  const [scaleEmpId, setScaleEmpId] = useState(initialColaboradores[0]?.id || "");
+  const [scaleEventId, setScaleEventId] = useState("");
+  const [scaleEmpId, setScaleEmpId] = useState("");
 
   // Form State: Register Payment
-  const [payRegistroId, setPayRegistroId] = useState(initialRegistros[1]?.id || "");
+  const [payRegistroId, setPayRegistroId] = useState("");
   const [payStatus, setPayStatus] = useState<StatusPagamento>("Pago");
   const [payValor, setPayValor] = useState("");
 
