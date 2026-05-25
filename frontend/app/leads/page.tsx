@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   MoreHorizontal,
@@ -58,105 +58,50 @@ interface Lead {
   clientCategory?: ClientCategory;
 }
 
-// ─── Mock Data ─────────────────────────────────────────────────────────────────
-const mockLeads: Lead[] = [
-  {
-    id: "1",
-    name: "Ana & João",
-    document: "123.456.789-00",
-    phone: "(11) 98765-4321",
+// ─── DB Types ──────────────────────────────────────────────────────────────────
+interface ClienteDB {
+  id: string;
+  nome: string;
+  cpf: string | null;
+  email: string | null;
+  origem: string | null;
+  observacoes: string | null;
+  created_at: string;
+  categorias_cliente: { id: string; nome: string } | null;
+  cliente_telefones: { numero: string; principal: boolean; tipo: string } | null;
+}
+
+function mapClienteToLead(c: ClienteDB): Lead {
+  const catNome = c.categorias_cliente?.nome ?? "";
+  const clientCategory: ClientCategory = catNome.includes("VIP")
+    ? "Cliente VIP"
+    : catNome.includes("Prime")
+    ? "Cliente Prime"
+    : "Cliente Novo";
+
+  const cpfFormatado = c.cpf
+    ? c.cpf.length === 11
+      ? c.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+      : c.cpf
+    : "—";
+
+  return {
+    id: c.id,
+    name: c.nome,
+    document: cpfFormatado,
+    phone: c.cliente_telefones?.numero || "—",
+    clientCategory,
     eventType: "Casamento",
-    eventDate: "12/10/2026",
-    status: "Fechado",
-    lastContact: "Hoje, 10:30",
-    servicosContratados: ["buffet", "decoracao", "fotografia"],
-    valoresPorServico: { buffet: 3500000, decoracao: 1000000, fotografia: 500000 },
-    descontoCombo: 0.10,
-    subtotalCents: 5000000,
-    totalCents: 4500000,
-    clientCategory: "Cliente VIP",
-  },
-  {
-    id: "2",
-    name: "Infantil Miguel",
-    document: "098.765.432-11",
-    phone: "(11) 91234-5678",
-    eventType: "Infantil",
-    eventDate: "15/08/2026",
-    status: "Proposta Enviada",
-    lastContact: "Ontem, 16:45",
-    servicosContratados: ["buffet"],
-    valoresPorServico: { buffet: 1800000 },
-    descontoCombo: 0,
-    subtotalCents: 1800000,
-    totalCents: 1800000,
-    clientCategory: "Cliente Prime",
-  },
-  {
-    id: "3",
-    name: "PrimeTech",
-    document: "12.345.678/0001-99",
-    phone: "(11) 3000-4000",
-    eventType: "Corporativo",
-    eventDate: "20/11/2026",
-    status: "Negociação",
-    lastContact: "12/05/2026",
-    servicosContratados: ["buffet", "decoracao"],
-    valoresPorServico: { buffet: 3000000, decoracao: 684210 },
-    descontoCombo: 0.05,
-    subtotalCents: 3684210,
-    totalCents: 3500000,
-    clientCategory: "Cliente Prime",
-  },
-  {
-    id: "4",
-    name: "Juliana Costa",
-    document: "456.789.123-44",
-    phone: "(11) 97777-8888",
-    eventType: "Adulto",
-    eventDate: "05/09/2026",
+    eventDate: "—",
     status: "Novo Cliente",
-    lastContact: "10/05/2026",
-    servicosContratados: ["buffet", "fotografia"],
-    valoresPorServico: { buffet: 1815789, fotografia: 500000 },
-    descontoCombo: 0.05,
-    subtotalCents: 2315789,
-    totalCents: 2200000,
-    clientCategory: "Cliente Novo",
-  },
-  {
-    id: "5",
-    name: "Lucas Oliveira",
-    document: "789.123.456-55",
-    phone: "(11) 95555-6666",
-    eventType: "Casamento",
-    eventDate: "18/12/2026",
-    status: "Novo Cliente",
-    lastContact: "15/05/2026",
-    servicosContratados: ["fotografia"],
-    valoresPorServico: { fotografia: 600000 },
+    lastContact: new Date(c.created_at).toLocaleDateString("pt-BR"),
+    servicosContratados: [],
+    valoresPorServico: {},
     descontoCombo: 0,
-    subtotalCents: 600000,
-    totalCents: 600000,
-    clientCategory: "Cliente Novo",
-  },
-  {
-    id: "6",
-    name: "Cláudia Santos",
-    document: "321.654.987-88",
-    phone: "(11) 94444-5555",
-    eventType: "Corporativo",
-    eventDate: "05/07/2026",
-    status: "Proposta Enviada",
-    lastContact: "18/05/2026",
-    servicosContratados: ["decoracao"],
-    valoresPorServico: { decoracao: 1200000 },
-    descontoCombo: 0,
-    subtotalCents: 1200000,
-    totalCents: 1200000,
-    clientCategory: "Cliente Novo",
-  },
-];
+    subtotalCents: 0,
+    totalCents: 0,
+  };
+}
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const eventTypeStyles: Record<EventType, string> = {
@@ -221,7 +166,8 @@ function DropdownItem({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ClientesPage() {
-  const [leads, setLeads] = useState<Lead[]>(mockLeads);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("Todos");
   const [activeServiceFilter, setActiveServiceFilter] = useState("Todos");
   const [searchTerm, setSearchTerm] = useState("");
@@ -238,12 +184,31 @@ export default function ClientesPage() {
   const [formServicos, setFormServicos] = useState<ServiceType[]>([]);
   const [formObservacoes, setFormObservacoes] = useState("");
   const [formCategory, setFormCategory] = useState<ClientCategory>("Cliente Novo");
+  const [formSaving, setFormSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
   // Action dropdown & modals
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [showStatusModal, setShowStatusModal] = useState<Lead | null>(null);
   const [showProposalModal, setShowProposalModal] = useState<Lead | null>(null);
   const [showViewModal, setShowViewModal] = useState<Lead | null>(null);
+
+  useEffect(() => {
+    async function loadClientes() {
+      try {
+        const res = await fetch("/api/clientes");
+        const data = await res.json();
+        if (data.ok) {
+          setLeads((data.data as ClienteDB[]).map(mapClienteToLead));
+        }
+      } catch {
+        // silently fail — list stays empty
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadClientes();
+  }, []);
 
   const showToastMsg = (msg: string) => {
     setToastMessage(msg);
@@ -260,33 +225,53 @@ export default function ClientesPage() {
     setFormEventType("Casamento"); setFormEventDate("");
     setFormServicos([]); setFormObservacoes("");
     setFormCategory("Cliente Novo");
+    setFormError("");
   };
 
-  const handleSaveLead = () => {
-    const servicos: ServiceType[] = formServicos.length > 0 ? formServicos : ["buffet"];
-    const descontoCombo = COMBO_DISCOUNTS[servicos.length] ?? 0;
-    const novoLead: Lead = {
-      id: Date.now().toString(),
-      name: formNome.trim() || "Sem nome",
-      document: formCpf.trim() || "—",
-      phone: formTelefone.trim() || "—",
-      eventType: formEventType,
-      eventDate: formEventDate
-        ? new Date(formEventDate + "T12:00:00").toLocaleDateString("pt-BR")
-        : "—",
-      status: "Novo Cliente",
-      lastContact: "Agora",
-      servicosContratados: servicos,
-      valoresPorServico: {},
-      descontoCombo,
-      subtotalCents: 0,
-      totalCents: 0,
-      clientCategory: formCategory,
-    };
-    setLeads((prev) => [novoLead, ...prev]);
-    setShowNewLead(false);
-    resetForm();
-    showToastMsg("Cliente criado com sucesso e adicionado ao Painel de Clientes!");
+  const handleSaveLead = async () => {
+    setFormSaving(true);
+    setFormError("");
+    try {
+      const res = await fetch("/api/clientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: formNome.trim() || "Sem nome",
+          cpf: formCpf.trim() || null,
+          telefone: formTelefone.trim() || null,
+          categoria: formCategory,
+          observacoes: formObservacoes.trim() || null,
+          tipoEvento: formEventType,
+          dataEvento: formEventDate || null,
+          servicos: formServicos,
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setFormError(data.error || "Erro ao criar cliente.");
+        return;
+      }
+      const servicos: ServiceType[] = formServicos.length > 0 ? formServicos : [];
+      const descontoCombo = servicos.length > 1 ? (COMBO_DISCOUNTS[servicos.length] ?? 0) : 0;
+      const novoLead: Lead = {
+        ...mapClienteToLead(data.data as ClienteDB),
+        eventType: formEventType,
+        eventDate: formEventDate
+          ? new Date(formEventDate + "T12:00:00").toLocaleDateString("pt-BR")
+          : "—",
+        servicosContratados: servicos,
+        descontoCombo,
+        lastContact: "Agora",
+      };
+      setLeads((prev) => [novoLead, ...prev]);
+      setShowNewLead(false);
+      resetForm();
+      showToastMsg("Cliente criado com sucesso e adicionado ao Painel de Clientes!");
+    } catch {
+      setFormError("Erro de conexão. Tente novamente.");
+    } finally {
+      setFormSaving(false);
+    }
   };
 
   const handleStatusChange = (lead: Lead, newStatus: LeadStatus) => {
@@ -658,10 +643,20 @@ export default function ClientesPage() {
           })}
         </div>
 
-        {filteredLeads.length === 0 && (
+        {loading && (
+          <div className="border-t border-[var(--border-default)] p-12 text-center">
+            <RefreshCw className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-3 animate-spin" />
+            <p className="text-sm text-[var(--text-muted)]">Carregando clientes...</p>
+          </div>
+        )}
+        {!loading && filteredLeads.length === 0 && (
           <div className="bg-[var(--bg-card)] border-t border-[var(--border-default)] p-12 text-center">
             <Users className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-3" />
-            <p className="text-sm text-[var(--text-secondary)] font-medium">Nenhum cliente corresponde aos filtros selecionados.</p>
+            <p className="text-sm text-[var(--text-secondary)] font-medium">
+              {leads.length === 0
+                ? "Nenhum cliente cadastrado ainda. Clique em \"Novo Cliente\" para começar."
+                : "Nenhum cliente corresponde aos filtros selecionados."}
+            </p>
           </div>
         )}
       </div>
@@ -788,14 +783,20 @@ export default function ClientesPage() {
                 <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Observações</label>
                 <textarea rows={3} placeholder="Informações adicionais sobre o cliente..." value={formObservacoes} onChange={(e) => setFormObservacoes(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors resize-none" />
               </div>
+
+              {formError && (
+                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                  {formError}
+                </p>
+              )}
             </div>
 
             <div className="flex gap-3 p-5 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)] shrink-0">
               <button onClick={() => { setShowNewLead(false); resetForm(); }} className="flex-1 py-2.5 rounded-xl border border-[var(--border-default)] text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all">
                 Cancelar
               </button>
-              <button onClick={handleSaveLead} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black font-bold text-sm transition-all shadow-md">
-                Salvar Cliente
+              <button onClick={handleSaveLead} disabled={formSaving} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black font-bold text-sm transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed">
+                {formSaving ? "Salvando..." : "Salvar Cliente"}
               </button>
             </div>
           </div>

@@ -23,11 +23,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!password || password !== expected) {
+  if (!password || password.trim() !== expected.trim()) {
     return NextResponse.json({ ok: false, error: "Senha incorreta." }, { status: 401 });
   }
 
-  const token = getToken(expected);
+  const token = getToken(expected.trim());
   const isProduction = process.env.NODE_ENV === "production";
 
   const response = NextResponse.json({ ok: true });

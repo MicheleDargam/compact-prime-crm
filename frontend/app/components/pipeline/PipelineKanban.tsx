@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -15,15 +15,32 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 
-import { INITIAL_DATA, KanbanState, Lead } from "./pipeline-data";
+import { KanbanState, Lead } from "./pipeline-data";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCardOverlay } from "./KanbanCard";
 import { isCombo } from "@/app/data/services";
 
+const EMPTY_STATE: KanbanState = {
+  leads: {},
+  columns: [
+    { id: "col-novo", title: "Novo Cliente", color: "var(--gold-400)", leadIds: [] },
+    { id: "col-proposta", title: "Proposta Enviada", color: "var(--warning)", leadIds: [] },
+    { id: "col-negociacao", title: "Negociação", color: "#a78bfa", leadIds: [] },
+    { id: "col-fechado", title: "Fechado", color: "var(--success)", leadIds: [] },
+  ],
+};
+
+const COLUMN_TO_STATUS: Record<string, string> = {
+  "col-novo": "lead",
+  "col-proposta": "proposta",
+  "col-negociacao": "negociacao",
+  "col-fechado": "fechado",
+};
+
 const serviceFilterOptions = ["Todos", "Buffet", "Decoração", "Fotografia", "Combo"];
 
 export default function PipelineKanban() {
-  const [data, setData] = useState<KanbanState>(INITIAL_DATA);
+  const [data, setData] = useState<KanbanState>(EMPTY_STATE);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [activeColumnColor, setActiveColumnColor] = useState<string>("");
   const [activeServiceFilter, setActiveServiceFilter] = useState<string>("Todos");
@@ -31,6 +48,15 @@ export default function PipelineKanban() {
   // is cleared. Without this, the retained transform creates a containing block
   // that breaks position:fixed on DragOverlay, causing the card to appear below the cursor.
   const [entranceAnimated, setEntranceAnimated] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/painel-clientes")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.ok) setData(json.data);
+      })
+      .catch(() => {});
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -88,6 +114,8 @@ export default function PipelineKanban() {
     const isOverLead = over.data.current?.type === "Lead";
     const isOverColumn = over.data.current?.type === "Column";
 
+    let movedToColumnId: string | null = null;
+
     setData((prev) => {
       const activeColumn = prev.columns.find((col) => col.leadIds.includes(activeId));
       if (!activeColumn) return prev;
@@ -110,6 +138,7 @@ export default function PipelineKanban() {
           };
         }
 
+        movedToColumnId = overColumn.id;
         const activeItems = activeColumn.leadIds.filter((id) => id !== activeId);
         const overItems = overColumn.leadIds;
         const overIndex = overItems.indexOf(overId);
@@ -125,6 +154,7 @@ export default function PipelineKanban() {
 
       if (isOverColumn) {
         if (activeColumn.id === overId) return prev;
+        movedToColumnId = overId;
         const activeItems = activeColumn.leadIds.filter((id) => id !== activeId);
         return {
           ...prev,
@@ -138,6 +168,17 @@ export default function PipelineKanban() {
 
       return prev;
     });
+
+    if (movedToColumnId) {
+      const newStatus = COLUMN_TO_STATUS[movedToColumnId];
+      if (newStatus) {
+        fetch(`/api/painel-clientes/${activeId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        }).catch(() => {});
+      }
+    }
   };
 
   const dropAnimation = {
