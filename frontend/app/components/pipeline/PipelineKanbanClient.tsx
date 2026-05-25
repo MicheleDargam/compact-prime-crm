@@ -2,8 +2,16 @@
 
 import dynamic from "next/dynamic";
 
-const PipelineKanban = dynamic(() => import("./PipelineKanban"), { ssr: false });
+interface PipelineKanbanClientProps {
+  searchTerm?: string;
+  refreshTrigger?: number;
+}
 
-export default function PipelineKanbanClient() {
-  return <PipelineKanban />;
+const PipelineKanban = dynamic<PipelineKanbanClientProps>(
+  () => import("./PipelineKanban"),
+  { ssr: false }
+);
+
+export default function PipelineKanbanClient({ searchTerm = "", refreshTrigger = 0 }: PipelineKanbanClientProps) {
+  return <PipelineKanban searchTerm={searchTerm} refreshTrigger={refreshTrigger} />;
 }

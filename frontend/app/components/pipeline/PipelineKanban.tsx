@@ -14,11 +14,14 @@ import {
   defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-
 import { KanbanState, Lead } from "./pipeline-data";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCardOverlay } from "./KanbanCard";
-import { isCombo } from "@/app/data/services";
+import { isCombo, SERVICES } from "@/app/data/services";
+import {
+  Eye, Pencil, RefreshCw, FileText, MessageCircle,
+  Calendar, Archive, Trash2, X, CheckCircle2,
+} from "lucide-react";
 
 const EMPTY_STATE: KanbanState = {
   leads: {},
@@ -37,17 +40,71 @@ const COLUMN_TO_STATUS: Record<string, string> = {
   "col-fechado": "fechado",
 };
 
+const COLUMN_STATUS_STYLES: Record<string, string> = {
+  "col-novo": "text-[var(--gold-300)] bg-[var(--gold-500)]/10 border-[var(--gold-500)]/20",
+  "col-proposta": "text-yellow-300 bg-yellow-500/10 border-yellow-500/20",
+  "col-negociacao": "text-violet-300 bg-violet-500/10 border-violet-500/20",
+  "col-fechado": "text-emerald-300 bg-emerald-500/10 border-emerald-500/20",
+};
+
 const serviceFilterOptions = ["Todos", "Buffet", "Decoração", "Fotografia", "Combo"];
 
-export default function PipelineKanban() {
+type MenuClickPos = { x: number; y: number };
+
+interface ActiveMenu {
+  leadId: string;
+  x: number;
+  y: number;
+}
+
+interface PipelineKanbanProps {
+  searchTerm?: string;
+  refreshTrigger?: number;
+}
+
+function DropdownItem({
+  icon, label, onClick, danger = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
+        danger
+          ? "text-red-400 hover:bg-red-500/10"
+          : "text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+      }`}
+    >
+      <span className="w-4 h-4 shrink-0 flex items-center">{icon}</span>
+      {label}
+    </button>
+  );
+}
+
+export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: PipelineKanbanProps) {
   const [data, setData] = useState<KanbanState>(EMPTY_STATE);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [activeColumnColor, setActiveColumnColor] = useState<string>("");
-  const [activeServiceFilter, setActiveServiceFilter] = useState<string>("Todos");
-  // After the entrance animation ends, remove the class so transform:translateY(0)
-  // is cleared. Without this, the retained transform creates a containing block
-  // that breaks position:fixed on DragOverlay, causing the card to appear below the cursor.
   const [entranceAnimated, setEntranceAnimated] = useState(false);
+  const [activeServiceFilter, setActiveServiceFilter] = useState<string>("Todos");
+
+  const [activeMenu, setActiveMenu] = useState<ActiveMenu | null>(null);
+  const [showViewModal, setShowViewModal] = useState<Lead | null>(null);
+  const [showStatusModal, setShowStatusModal] = useState<Lead | null>(null);
+  const [showProposalModal, setShowProposalModal] = useState<Lead | null>(null);
+
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+
+  const showToastMsg = (msg: string) => {
+    setToastMessage(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3500);
+  };
 
   useEffect(() => {
     fetch("/api/painel-clientes")
@@ -56,46 +113,74 @@ export default function PipelineKanban() {
         if (json.ok) setData(json.data);
       })
       .catch(() => {});
-  }, []);
+  }, [refreshTrigger]);
+
+  const leadMatchesSearch = (lead: Lead): boolean => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      lead.name.toLowerCase().includes(q) ||
+      lead.cpf.toLowerCase().includes(q) ||
+      lead.phone.toLowerCase().includes(q)
+    );
+  };
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5, // Requires moving 5px before drag starts. Essential for mobile scrolling and clicking.
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   const totalLeads = Object.keys(data.leads).length;
 
-  // Filter count logic
   const filteredTotalCount = Object.values(data.leads).filter((lead) => {
+    if (!leadMatchesSearch(lead)) return false;
     if (activeServiceFilter === "Todos") return true;
     if (activeServiceFilter === "Combo") return isCombo(lead.servicosContratados);
-    
-    const serviceMap: Record<string, string> = {
-      "Buffet": "buffet",
-      "Decoração": "decoracao",
-      "Fotografia": "fotografia",
-    };
-    return lead.servicosContratados.includes(serviceMap[activeServiceFilter] as any);
+    const serviceMap: Record<string, string> = { Buffet: "buffet", Decoração: "decoracao", Fotografia: "fotografia" };
+    return lead.servicosContratados.includes(serviceMap[activeServiceFilter] as never);
   }).length;
 
-  const findColumnByLeadId = (id: string) => {
-    return data.columns.find((col) => col.leadIds.includes(id));
+  const findColumnByLeadId = (id: string) => data.columns.find((col) => col.leadIds.includes(id));
+
+  const handleMenuClick = (pos: MenuClickPos, leadId: string) => {
+    const x = Math.max(4, Math.min(pos.x - 208, (typeof window !== "undefined" ? window.innerWidth : 800) - 212));
+    setActiveMenu({ leadId, x, y: pos.y });
+  };
+
+  const handleStatusChange = (leadId: string, newColumnId: string) => {
+    const newStatus = COLUMN_TO_STATUS[newColumnId];
+    if (!newStatus) return;
+
+    setData((prev) => {
+      const activeColumn = prev.columns.find((col) => col.leadIds.includes(leadId));
+      if (!activeColumn || activeColumn.id === newColumnId) return prev;
+      return {
+        ...prev,
+        columns: prev.columns.map((col) => {
+          if (col.id === activeColumn.id) return { ...col, leadIds: col.leadIds.filter((id) => id !== leadId) };
+          if (col.id === newColumnId) return { ...col, leadIds: [...col.leadIds, leadId] };
+          return col;
+        }),
+      };
+    });
+
+    fetch(`/api/painel-clientes/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    }).catch(() => {});
+
+    const colTitle = data.columns.find((c) => c.id === newColumnId)?.title ?? newColumnId;
+    setShowStatusModal(null);
+    showToastMsg(`Status atualizado para "${colTitle}".`);
   };
 
   const onDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const { id } = active;
     const activeData = active.data.current;
-
     if (activeData?.type === "Lead") {
       setActiveLead(activeData.lead);
-      const col = findColumnByLeadId(id as string);
+      const col = findColumnByLeadId(active.id as string);
       if (col) setActiveColumnColor(col.color);
     }
   };
@@ -123,7 +208,6 @@ export default function PipelineKanban() {
       if (isOverLead) {
         const overColumn = prev.columns.find((col) => col.leadIds.includes(overId));
         if (!overColumn) return prev;
-
         if (activeColumn.id === overColumn.id) {
           const activeIndex = activeColumn.leadIds.indexOf(activeId);
           const overIndex = activeColumn.leadIds.indexOf(overId);
@@ -137,7 +221,6 @@ export default function PipelineKanban() {
             ),
           };
         }
-
         movedToColumnId = overColumn.id;
         const activeItems = activeColumn.leadIds.filter((id) => id !== activeId);
         const overItems = overColumn.leadIds;
@@ -185,14 +268,68 @@ export default function PipelineKanban() {
     sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: "0.5" } } }),
   };
 
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+
+  const activeMenuLead = activeMenu ? data.leads[activeMenu.leadId] : null;
+
   return (
     <div
       className={entranceAnimated ? undefined : "animate-fade-in-up stagger-5"}
       style={entranceAnimated ? undefined : { opacity: 0 }}
-      onAnimationEnd={entranceAnimated ? undefined : (e) => {
-        if (e.target === e.currentTarget) setEntranceAnimated(true);
-      }}
+      onAnimationEnd={
+        entranceAnimated
+          ? undefined
+          : (e) => {
+              if (e.target === e.currentTarget) setEntranceAnimated(true);
+            }
+      }
     >
+      {/* Toast */}
+      {showToast && (
+        <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2.5 px-4 py-3 bg-[var(--bg-card)] border border-emerald-500/40 rounded-xl shadow-lg text-xs font-semibold text-emerald-400 animate-fade-in-up max-w-xs">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          {toastMessage}
+        </div>
+      )}
+
+      {/* Click-outside overlay for action menu */}
+      {activeMenu && <div className="fixed inset-0 z-40" onClick={() => setActiveMenu(null)} />}
+
+      {/* Action dropdown (fixed position) */}
+      {activeMenu && activeMenuLead && (
+        <div
+          className="fixed z-50 w-52 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl shadow-2xl overflow-hidden animate-fade-in-up"
+          style={{ top: activeMenu.y, left: activeMenu.x }}
+        >
+          <div className="py-1">
+            <DropdownItem icon={<Eye className="w-4 h-4" />} label="Ver cliente" onClick={() => { setShowViewModal(activeMenuLead); setActiveMenu(null); }} />
+            {/* TODO: conectar API - Editar cadastro */}
+            <DropdownItem icon={<Pencil className="w-4 h-4" />} label="Editar cadastro" onClick={() => { showToastMsg("Edição disponível em breve."); setActiveMenu(null); }} />
+            <DropdownItem icon={<RefreshCw className="w-4 h-4" />} label="Alterar status" onClick={() => { setShowStatusModal(activeMenuLead); setActiveMenu(null); }} />
+            <div className="h-px mx-3 my-1 bg-[var(--border-subtle)]" />
+            <DropdownItem icon={<FileText className="w-4 h-4" />} label="Visualizar proposta" onClick={() => { setShowProposalModal(activeMenuLead); setActiveMenu(null); }} />
+            <div className="h-px mx-3 my-1 bg-[var(--border-subtle)]" />
+            <DropdownItem
+              icon={<MessageCircle className="w-4 h-4" />}
+              label="Abrir WhatsApp"
+              onClick={() => {
+                const num = activeMenuLead.phone.replace(/\D/g, "");
+                if (num) window.open(`https://wa.me/55${num}`, "_blank");
+                setActiveMenu(null);
+              }}
+            />
+            {/* TODO: conectar API - Agendar reunião */}
+            <DropdownItem icon={<Calendar className="w-4 h-4" />} label="Agendar reunião" onClick={() => { showToastMsg("Integração com agenda em breve."); setActiveMenu(null); }} />
+            <div className="h-px mx-3 my-1 bg-[var(--border-subtle)]" />
+            {/* TODO: conectar API - Arquivar */}
+            <DropdownItem icon={<Archive className="w-4 h-4" />} label="Arquivar" onClick={() => { showToastMsg("Arquivamento disponível em breve."); setActiveMenu(null); }} />
+            {/* TODO: conectar API - Excluir */}
+            <DropdownItem icon={<Trash2 className="w-4 h-4" />} label="Excluir" onClick={() => { showToastMsg("Exclusão disponível em breve."); setActiveMenu(null); }} danger />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -203,14 +340,17 @@ export default function PipelineKanban() {
             Arraste os cards para avançar os clientes de etapa
           </p>
         </div>
-        <span className="text-xs font-semibold px-4 py-2 rounded-full self-start md:self-auto" style={{ background: "var(--bg-card)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}>
+        <span
+          className="text-xs font-semibold px-4 py-2 rounded-full self-start md:self-auto"
+          style={{ background: "var(--bg-card)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-card)" }}
+        >
           {activeServiceFilter === "Todos"
             ? `${totalLeads} clientes ativos`
             : `${filteredTotalCount} de ${totalLeads} clientes (${activeServiceFilter})`}
         </span>
       </div>
 
-      {/* Service Filters Pills Row */}
+      {/* Service Filters */}
       <div className="flex items-center gap-2 mb-6 bg-[var(--bg-card)] p-3.5 rounded-xl border border-[var(--border-default)] shadow-card overflow-x-auto no-scrollbar">
         <span className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider shrink-0 mr-2">Filtrar Serviço:</span>
         <div className="flex gap-2">
@@ -218,12 +358,11 @@ export default function PipelineKanban() {
             <button
               key={filter}
               onClick={() => setActiveServiceFilter(filter)}
-              className={`
-                px-4 py-1.5 rounded-full text-xs font-semibold transition-all border cursor-pointer whitespace-nowrap
-                ${activeServiceFilter === filter 
-                  ? 'bg-[var(--gold-500)]/15 text-[var(--gold-300)] border-[var(--gold-500)]/30 shadow-[var(--shadow-gold-glow)]' 
-                  : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--gold-500)]/20 hover:text-[var(--text-primary)]'}
-              `}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all border cursor-pointer whitespace-nowrap ${
+                activeServiceFilter === filter
+                  ? "bg-[var(--gold-500)]/15 text-[var(--gold-300)] border-[var(--gold-500)]/30 shadow-[var(--shadow-gold-glow)]"
+                  : "bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--gold-500)]/20 hover:text-[var(--text-primary)]"
+              }`}
             >
               {filter}
             </button>
@@ -232,32 +371,23 @@ export default function PipelineKanban() {
       </div>
 
       {/* Board */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-      >
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2" style={{ scrollbarWidth: "thin" }}>
           {data.columns.map((col) => {
             const columnLeads = col.leadIds
               .map((id) => data.leads[id])
               .filter((lead) => {
+                if (!lead) return false;
+                if (!leadMatchesSearch(lead)) return false;
                 if (activeServiceFilter === "Todos") return true;
                 if (activeServiceFilter === "Combo") return isCombo(lead.servicosContratados);
-                
-                const serviceMap: Record<string, string> = {
-                  "Buffet": "buffet",
-                  "Decoração": "decoracao",
-                  "Fotografia": "fotografia",
-                };
-                return lead.servicosContratados.includes(serviceMap[activeServiceFilter] as any);
+                const serviceMap: Record<string, string> = { Buffet: "buffet", Decoração: "decoracao", Fotografia: "fotografia" };
+                return lead.servicosContratados.includes(serviceMap[activeServiceFilter] as never);
               });
-            return <KanbanColumn key={col.id} column={col} leads={columnLeads} />;
+            return <KanbanColumn key={col.id} column={col} leads={columnLeads} onMenuClick={handleMenuClick} />;
           })}
         </div>
 
-        {/* Drag Overlay */}
         <DragOverlay dropAnimation={dropAnimation}>
           {activeLead ? (
             <div style={{ transform: "rotate(4deg)", opacity: 0.9, boxShadow: "var(--shadow-gold-glow)" }}>
@@ -266,6 +396,235 @@ export default function PipelineKanban() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* MODAL: Ver Cliente */}
+      {showViewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl w-full max-w-md flex flex-col overflow-hidden max-h-[90vh] shadow-2xl">
+            <div className="flex justify-between items-center p-5 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[var(--gold-500)]/10 flex items-center justify-center text-[var(--gold-400)]">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-[var(--text-primary)]">{showViewModal.name}</h3>
+                  <p className="text-xs text-[var(--text-muted)]">Ficha do cliente</p>
+                </div>
+              </div>
+              <button onClick={() => setShowViewModal(null)} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto flex flex-col gap-4">
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded-xl p-4 flex flex-col gap-3">
+                {[
+                  { label: "Nome", val: showViewModal.name },
+                  { label: "CPF / CNPJ", val: showViewModal.cpf },
+                  { label: "Telefone", val: showViewModal.phone },
+                  { label: "Tipo de Evento", val: showViewModal.eventType },
+                  { label: "Tempo de Buffet", val: showViewModal.buffetTime },
+                  { label: "Categoria", val: showViewModal.clientCategory ?? "—" },
+                ].map(({ label, val }, i, arr) => (
+                  <div
+                    key={label}
+                    className={`flex justify-between items-center text-sm ${i < arr.length - 1 ? "border-b border-[var(--border-subtle)]/50 pb-2" : ""}`}
+                  >
+                    <span className="text-xs text-[var(--text-muted)]">{label}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{val}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-2">Serviços</p>
+                <div className="flex flex-wrap gap-2">
+                  {showViewModal.servicosContratados.length === 0 ? (
+                    <span className="text-xs text-[var(--text-muted)]">Nenhum serviço selecionado</span>
+                  ) : (
+                    showViewModal.servicosContratados.map((s) => (
+                      <span key={s} className="text-xs px-2 py-1 rounded-lg bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-secondary)]">
+                        {SERVICES[s]?.label ?? s}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center px-4 py-3 rounded-xl bg-[var(--gold-500)]/5 border border-[var(--gold-500)]/15">
+                <span className="text-xs text-[var(--text-secondary)]">Valor estimado</span>
+                <span className="font-mono font-bold text-[var(--gold-300)] text-lg">{formatCurrency(showViewModal.totalCents / 100)}</span>
+              </div>
+
+              {showViewModal.notes && (
+                <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs text-amber-300 leading-relaxed">
+                  <p className="font-semibold mb-1 uppercase tracking-wider text-[9px] text-amber-400">Observações</p>
+                  {showViewModal.notes}
+                </div>
+              )}
+            </div>
+
+            <div className="p-5 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)] shrink-0">
+              <button onClick={() => setShowViewModal(null)} className="w-full py-2.5 rounded-xl border border-[var(--border-default)] text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Alterar Status */}
+      {showStatusModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+            <div className="flex justify-between items-center p-5 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[var(--bg-input)] flex items-center justify-center text-[var(--text-muted)]">
+                  <RefreshCw className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-[var(--text-primary)]">Alterar Status</h3>
+                  <p className="text-xs text-[var(--text-muted)] truncate max-w-[180px]">{showStatusModal.name}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowStatusModal(null)} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-2">
+              <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-1">
+                Selecione o novo status
+              </p>
+              {data.columns.map((col) => {
+                const isCurrent = col.leadIds.includes(showStatusModal.id);
+                return (
+                  <button
+                    key={col.id}
+                    onClick={() => handleStatusChange(showStatusModal.id, col.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border transition-all cursor-pointer ${
+                      isCurrent
+                        ? `${COLUMN_STATUS_STYLES[col.id]} shadow-sm`
+                        : "bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--gold-500)]/20 hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                    }`}
+                  >
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: col.color }} />
+                    {col.title}
+                    {isCurrent && <span className="ml-auto text-[9px] font-bold uppercase tracking-wider opacity-70">atual</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Visualizar Proposta */}
+      {showProposalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[var(--bg-card)] border border-[var(--gold-500)]/30 rounded-2xl shadow-[var(--shadow-gold-glow)] w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--gold-400)] to-[var(--gold-600)] flex items-center justify-center text-black">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-[var(--text-primary)]">Proposta Comercial</h3>
+                  <p className="text-xs text-[var(--text-muted)]">{showProposalModal.name} · Visualização</p>
+                </div>
+              </div>
+              <button onClick={() => setShowProposalModal(null)} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 p-6 overflow-y-auto bg-neutral-900">
+              <div className="bg-white text-neutral-900 p-7 rounded-lg shadow-2xl border border-neutral-200" style={{ fontFamily: "Georgia, serif" }}>
+                <div className="border-b-2 border-amber-600 pb-4 mb-6 flex justify-between items-start">
+                  <div>
+                    <h2 className="text-base font-bold uppercase tracking-wider text-amber-700" style={{ fontFamily: "sans-serif" }}>COMPACT PRIME</h2>
+                    <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-semibold" style={{ fontFamily: "sans-serif" }}>Proposta Comercial — Eventos Premium</p>
+                  </div>
+                  <div className="text-right text-xs text-neutral-500" style={{ fontFamily: "sans-serif" }}>
+                    <p>Ref.: CP-{showProposalModal.id.slice(-4).padStart(4, "0")}</p>
+                    <p className="mt-0.5">Emitida em: {new Date().toLocaleDateString("pt-BR")}</p>
+                  </div>
+                </div>
+
+                <div className="mb-5" style={{ fontFamily: "sans-serif" }}>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 border-b border-neutral-200 pb-1 mb-3">Dados do Cliente</h4>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                    {[
+                      { label: "Nome / Razão Social", val: showProposalModal.name },
+                      { label: "CPF / CNPJ", val: showProposalModal.cpf },
+                      { label: "Telefone", val: showProposalModal.phone },
+                      { label: "Tipo de Evento", val: showProposalModal.eventType },
+                    ].map(({ label, val }) => (
+                      <div key={label}>
+                        <p className="text-neutral-400 text-[9px] uppercase tracking-wider">{label}</p>
+                        <p className="font-semibold text-neutral-800 mt-0.5">{val}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-5" style={{ fontFamily: "sans-serif" }}>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 border-b border-neutral-200 pb-1 mb-3">Serviços Incluídos</h4>
+                  {showProposalModal.servicosContratados.length === 0 ? (
+                    <p className="text-xs text-neutral-400 italic">Nenhum serviço selecionado.</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {showProposalModal.servicosContratados.map((s) => {
+                        const svc = SERVICES[s];
+                        const val = showProposalModal.valoresPorServico[s as keyof typeof showProposalModal.valoresPorServico];
+                        return (
+                          <div key={s} className="flex justify-between items-center text-xs border-b border-neutral-100 pb-1.5">
+                            <span className="text-neutral-800 font-medium">{svc?.label ?? s}</span>
+                            <span className="font-mono font-semibold text-neutral-700">
+                              {val ? formatCurrency(val / 100) : "A definir"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mb-5" style={{ fontFamily: "sans-serif" }}>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 border-b border-neutral-200 pb-1 mb-3">Resumo Financeiro</h4>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Subtotal</span>
+                      <span className="font-mono text-neutral-700">{formatCurrency(showProposalModal.subtotalCents / 100)}</span>
+                    </div>
+                    {showProposalModal.descontoCombo > 0 && (
+                      <div className="flex justify-between text-emerald-700">
+                        <span>Desconto Combo ({showProposalModal.descontoCombo * 100}%)</span>
+                        <span className="font-mono">-{formatCurrency((showProposalModal.subtotalCents - showProposalModal.totalCents) / 100)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-sm border-t border-neutral-200 pt-2 mt-1">
+                      <span className="text-neutral-800">Total da Proposta</span>
+                      <span className="font-mono text-amber-700">{formatCurrency(showProposalModal.totalCents / 100)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-neutral-200 pt-4 text-center" style={{ fontFamily: "sans-serif" }}>
+                  <p className="text-[9px] text-neutral-400 italic">Proposta gerada pelo CRM Compact Prime — uso informativo e gerencial.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)] shrink-0">
+              <button onClick={() => setShowProposalModal(null)} className="w-full py-2.5 rounded-xl border border-[var(--border-default)] text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

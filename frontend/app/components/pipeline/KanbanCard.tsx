@@ -4,7 +4,9 @@ import { Lead, ClientCategory } from "./pipeline-data";
 import { CSSProperties } from "react";
 import { isCombo } from "@/app/data/services";
 import { ServiceBadgeGroup } from "@/app/components/ServiceBadge";
-import { Sparkles, Crown, Star, Gem } from "lucide-react";
+import { Sparkles, Crown, Star, Gem, MoreHorizontal } from "lucide-react";
+
+type MenuClickPos = { x: number; y: number };
 
 const categoryConfig: Record<ClientCategory, { label: string; icon: React.ReactNode; classes: string }> = {
   "Cliente VIP": {
@@ -27,6 +29,7 @@ const categoryConfig: Record<ClientCategory, { label: string; icon: React.ReactN
 interface KanbanCardProps {
   lead: Lead;
   columnColor: string;
+  onMenuClick?: (pos: MenuClickPos, leadId: string) => void;
 }
 
 interface CardContentProps extends KanbanCardProps {
@@ -38,7 +41,7 @@ interface CardContentProps extends KanbanCardProps {
 }
 
 // Visual presentational component to ensure safe rendering in both Context and Overlay
-export function CardContent({ lead, columnColor, innerRef, style, attributes, listeners, isDragging }: CardContentProps) {
+export function CardContent({ lead, columnColor, innerRef, style, attributes, listeners, isDragging, onMenuClick }: CardContentProps) {
   const combo = isCombo(lead.servicosContratados);
   const discountAmount = lead.subtotalCents - lead.totalCents;
 
@@ -74,18 +77,18 @@ export function CardContent({ lead, columnColor, innerRef, style, attributes, li
       }}
       {...attributes}
       {...listeners}
-      className="rounded-lg p-3 border transition-all duration-200 cursor-grab hover:scale-[1.01] hover:shadow-card-hover active:cursor-grabbing group touch-none relative overflow-hidden"
+      className="rounded-lg p-3 border transition-all duration-200 cursor-grab hover:scale-[1.01] hover:shadow-card-hover active:cursor-grabbing group touch-none relative"
       onMouseEnter={(e) => { e.currentTarget.style.borderColor = columnColor; }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = combo ? "rgba(212, 169, 55, 0.3)" : "var(--border-subtle)"; }}
     >
       {/* Visual Indicator Top Line for Combos */}
       {combo && (
-        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-[var(--gold-500)]/40 to-transparent" />
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-[var(--gold-500)]/40 to-transparent rounded-t-lg" />
       )}
 
       {/* Card Header (Name, Value) */}
       <div className="flex justify-between items-start mb-2.5">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-bold truncate max-w-[130px]" style={{ color: "var(--text-primary)" }}>{lead.name}</p>
           {lead.clientCategory && (() => {
             const cfg = categoryConfig[lead.clientCategory];
@@ -98,11 +101,26 @@ export function CardContent({ lead, columnColor, innerRef, style, attributes, li
           })()}
           <p className="text-[10px] uppercase font-bold mt-0.5 tracking-wider" style={{ color: columnColor }}>{lead.eventType}</p>
         </div>
-        <div className="text-right flex-shrink-0">
-          <p className="text-xs font-bold font-mono" style={{ color: combo ? "var(--gold-300)" : "var(--text-primary)" }}>
-            {formatCurrency(lead.totalCents / 100)}
-          </p>
-          <p className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>Válido: {lead.validity}</p>
+        <div className="flex items-start gap-0.5 flex-shrink-0 ml-2">
+          <div className="text-right">
+            <p className="text-xs font-bold font-mono" style={{ color: combo ? "var(--gold-300)" : "var(--text-primary)" }}>
+              {formatCurrency(lead.totalCents / 100)}
+            </p>
+            <p className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>Válido: {lead.validity}</p>
+          </div>
+          {onMenuClick && (
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                onMenuClick({ x: rect.right, y: rect.bottom + 4 }, lead.id);
+              }}
+              className="p-0.5 ml-0.5 text-[var(--text-muted)] hover:text-[var(--gold-400)] hover:bg-[var(--gold-400)]/10 rounded transition-colors flex-shrink-0 cursor-pointer"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -166,7 +184,7 @@ export function CardContent({ lead, columnColor, innerRef, style, attributes, li
 }
 
 // Sortable wrapper for the columns
-export function KanbanCard({ lead, columnColor }: KanbanCardProps) {
+export function KanbanCard({ lead, columnColor, onMenuClick }: KanbanCardProps) {
   const {
     setNodeRef,
     attributes,
@@ -188,14 +206,15 @@ export function KanbanCard({ lead, columnColor }: KanbanCardProps) {
   };
 
   return (
-    <CardContent 
-      lead={lead} 
-      columnColor={columnColor} 
-      innerRef={setNodeRef} 
-      style={style} 
-      attributes={attributes} 
+    <CardContent
+      lead={lead}
+      columnColor={columnColor}
+      innerRef={setNodeRef}
+      style={style}
+      attributes={attributes}
       listeners={listeners}
-      isDragging={isDragging} 
+      isDragging={isDragging}
+      onMenuClick={onMenuClick}
     />
   );
 }

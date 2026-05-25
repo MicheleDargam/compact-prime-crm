@@ -4,12 +4,15 @@ import { Column, Lead } from "./pipeline-data";
 import { KanbanCard } from "./KanbanCard";
 import { useMemo } from "react";
 
+type MenuClickPos = { x: number; y: number };
+
 interface KanbanColumnProps {
   column: Column;
   leads: Lead[];
+  onMenuClick?: (pos: MenuClickPos, leadId: string) => void;
 }
 
-export function KanbanColumn({ column, leads }: KanbanColumnProps) {
+export function KanbanColumn({ column, leads, onMenuClick }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: column.id,
     data: {
@@ -44,7 +47,7 @@ export function KanbanColumn({ column, leads }: KanbanColumnProps) {
       >
         <SortableContext items={leadIds} strategy={verticalListSortingStrategy}>
           {leads.map((lead) => (
-            <KanbanCard key={lead.id} lead={lead} columnColor={column.color} />
+            <KanbanCard key={lead.id} lead={lead} columnColor={column.color} onMenuClick={onMenuClick} />
           ))}
         </SortableContext>
       </div>
