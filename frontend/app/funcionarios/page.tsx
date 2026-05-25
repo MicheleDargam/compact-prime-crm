@@ -65,11 +65,7 @@ export default function FuncionariosPage() {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [registros, setRegistros] = useState<RegistroHora[]>([]);
 
-  useEffect(() => {
-    fetch("/api/funcionarios").then(r => r.json()).then(json => { if (json.ok) setColaboradores(json.data as Colaborador[]); }).catch(() => {});
-    fetch("/api/funcionarios/eventos").then(r => r.json()).then(json => { if (json.ok) setEventos(json.data as Evento[]); }).catch(() => {});
-    fetch("/api/funcionarios/registros").then(r => r.json()).then(json => { if (json.ok) setRegistros(json.data as RegistroHora[]); }).catch(() => {});
-  }, []);
+  useEffect(() => { loadData(); }, []);
   
   // UI State: Filtering
   const [searchTerm, setSearchTerm] = useState("");
@@ -107,114 +103,99 @@ export default function FuncionariosPage() {
     }, 4000);
   };
 
+  const loadData = () => {
+    fetch("/api/funcionarios").then(r => r.json()).then(json => { if (json.ok) setColaboradores(json.data as Colaborador[]); }).catch(() => {});
+    fetch("/api/funcionarios/eventos").then(r => r.json()).then(json => { if (json.ok) setEventos(json.data as Evento[]); }).catch(() => {});
+    fetch("/api/funcionarios/registros").then(r => r.json()).then(json => { if (json.ok) setRegistros(json.data as RegistroHora[]); }).catch(() => {});
+  };
+
   // Handlers
-  const handleAddEmployee = (e: React.FormEvent) => {
+  const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmpNome.trim() || !newEmpTelefone.trim()) {
       addToast("Erro no preenchimento", "Por favor, preencha todos os campos do formulário.", "warning");
       return;
     }
-    const newEmp: Colaborador = {
-      id: "c_" + Date.now(),
-      nome: newEmpNome,
-      funcao: newEmpFuncao,
-      telefone: newEmpTelefone,
-      status: newEmpStatus,
-      disponibilidade: newEmpDisp
-    };
-    setColaboradores(prev => [...prev, newEmp]);
-    addToast("Funcionário Adicionado", `${newEmpNome} foi adicionado(a) como ${newEmpFuncao} com sucesso!`, "success");
-    
-    // Reset Form
-    setNewEmpNome("");
-    setNewEmpTelefone("");
-    setNewEmpStatus("Ativo");
-    setNewEmpDisp("Disponível");
-    setShowAddModal(false);
+    try {
+      const res = await fetch("/api/funcionarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: newEmpNome, funcao: newEmpFuncao, telefone: newEmpTelefone }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        addToast("Erro", json.error ?? "Erro ao adicionar funcionário.", "warning");
+        return;
+      }
+      setColaboradores(prev => [...prev, { id: json.data.id, nome: newEmpNome, funcao: newEmpFuncao, telefone: newEmpTelefone, status: "Ativo", disponibilidade: "Disponível" }]);
+      addToast("Funcionário Adicionado", `${newEmpNome} foi adicionado(a) como ${newEmpFuncao} com sucesso!`, "success");
+      setNewEmpNome("");
+      setNewEmpTelefone("");
+      setNewEmpStatus("Ativo");
+      setNewEmpDisp("Disponível");
+      setShowAddModal(false);
+    } catch {
+      addToast("Erro", "Falha na conexão ao salvar funcionário.", "warning");
+    }
   };
 
-  const handleScaleEmployee = (e: React.FormEvent) => {
+  const handleScaleEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     const eventObj = eventos.find(ev => ev.id === scaleEventId);
     const empObj = colaboradores.find(c => c.id === scaleEmpId);
-    
+
     if (!eventObj || !empObj) {
-      addToast("Erro", "Erro ao encontrar evento ou colaborador correspondente.", "warning");
+      addToast("Erro", "Selecione um evento e um colaborador.", "warning");
       return;
     }
 
-    // Check if already scaled
-    if (eventObj.colaboradores.some(c => c.nome === empObj.nome)) {
-      addToast("Aviso de Escala", `${empObj.nome} já está escalado(a) neste evento.`, "warning");
-      return;
+    try {
+      const res = await fetch("/api/funcionarios/eventos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventoId: scaleEventId, funcionarioId: scaleEmpId }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        addToast("Aviso", json.error ?? "Erro ao escalar colaborador.", "warning");
+        return;
+      }
+      addToast("Colaborador Escalado", `${empObj.nome} foi escalado(a) para ${eventObj.nome}.`, "success");
+      setShowEscalaModal(false);
+      fetch("/api/funcionarios/eventos").then(r => r.json()).then(j => { if (j.ok) setEventos(j.data as Evento[]); }).catch(() => {});
+      fetch("/api/funcionarios/registros").then(r => r.json()).then(j => { if (j.ok) setRegistros(j.data as RegistroHora[]); }).catch(() => {});
+    } catch {
+      addToast("Erro", "Falha na conexão ao escalar colaborador.", "warning");
     }
-
-    // Update Event in state
-    setEventos(prev => prev.map(ev => {
-      if (ev.id === scaleEventId) {
-        return {
-          ...ev,
-          colaboradores: [...ev.colaboradores, { nome: empObj.nome, funcao: empObj.funcao }]
-        };
-      }
-      return ev;
-    }));
-
-    // Update employee availability to Evento Agendado
-    setColaboradores(prev => prev.map(c => {
-      if (c.id === scaleEmpId) {
-        return { ...c, disponibilidade: "Evento agendado", status: "Ocupado" };
-      }
-      return c;
-    }));
-
-    // Add a mocked record of pay in the table automatically
-    const valueMap: Record<string, number> = {
-      "Garçom": 250,
-      "Cozinha": 300,
-      "Recepção": 200,
-      "Decoração": 450,
-      "Fotografia": 600,
-      "Limpeza": 180,
-      "Montagem": 220
-    };
-    const combinedVal = valueMap[empObj.funcao] || 250;
-
-    setRegistros(prev => [
-      ...prev,
-      {
-        id: "r_" + Date.now(),
-        funcionario: empObj.nome,
-        evento: eventObj.nome,
-        horas: 8,
-        valor: combinedVal,
-        status: "Pendente"
-      }
-    ]);
-
-    addToast("Colaborador Escalado", `${empObj.nome} foi escalado(a) para ${eventObj.nome}.`, "success");
-    setShowEscalaModal(false);
   };
 
-  const handleRegisterPayment = (e: React.FormEvent) => {
+  const handleRegisterPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     const regObj = registros.find(r => r.id === payRegistroId);
     if (!regObj) return;
 
-    setRegistros(prev => prev.map(r => {
-      if (r.id === payRegistroId) {
-        return {
-          ...r,
-          status: payStatus,
-          valor: payValor ? parseFloat(payValor) : r.valor
-        };
+    try {
+      const res = await fetch("/api/funcionarios/registros", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: payRegistroId, status: payStatus, valor: payValor ? parseFloat(payValor) : undefined }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        addToast("Erro", json.error ?? "Erro ao registrar pagamento.", "warning");
+        return;
       }
-      return r;
-    }));
-
-    addToast("Pagamento Registrado", `Pagamento de ${regObj.funcionario} no evento ${regObj.evento} marcado como ${payStatus}.`, "success");
-    setPayValor("");
-    setShowPayModal(false);
+      setRegistros(prev => prev.map(r =>
+        r.id === payRegistroId
+          ? { ...r, status: payStatus, valor: payValor ? parseFloat(payValor) : r.valor }
+          : r
+      ));
+      addToast("Pagamento Registrado", `Pagamento de ${regObj.funcionario} no evento ${regObj.evento} marcado como ${payStatus}.`, "success");
+      setPayValor("");
+      setShowPayModal(false);
+    } catch {
+      addToast("Erro", "Falha na conexão ao registrar pagamento.", "warning");
+    }
   };
 
   // Calculated Metrics

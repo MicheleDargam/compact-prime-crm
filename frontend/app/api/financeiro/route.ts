@@ -89,6 +89,8 @@ export async function GET() {
 
       return {
         id: c.id,
+        eventoId: c.evento_id,
+        clienteId: c.cliente_id,
         client: c.clientes.nome,
         eventType: c.eventos.tipo_evento,
         services: servicos,

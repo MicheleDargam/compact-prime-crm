@@ -37,91 +37,14 @@ interface PartnerPayout {
   status: PayoutStatus;
 }
 
-interface MonthlyData {
-  month: string;
-  revenue: number;
-  expenses: number;
-  netProfit: number;
-  reserveValue: number;
-  partners: PartnerPayout[];
-  categories: { name: string; value: number; color: string }[];
-  reserveGoal: { current: number; target: number; objective: string };
-}
+const PARTNERS = [
+  { id: "s1", name: "Clara Silva", avatar: "CS", sharePercent: 33.3 },
+  { id: "s2", name: "Beatriz Santos", avatar: "BS", sharePercent: 33.3 },
+  { id: "s3", name: "Alice Moreira", avatar: "AM", sharePercent: 33.4 },
+];
 
-const mockMonthlyData: Record<string, MonthlyData> = {
-  "Maio 2026": {
-    month: "Maio 2026",
-    revenue: 80000,
-    expenses: 42000,
-    netProfit: 38000,
-    reserveValue: 8000,
-    partners: [
-      { id: "s1", name: "Clara Silva", avatar: "CS", sharePercent: 33.3, expectedValue: 10000, withdrawnValue: 10000, status: "Pago" },
-      { id: "s2", name: "Beatriz Santos", avatar: "BS", sharePercent: 33.3, expectedValue: 10000, withdrawnValue: 5000, status: "Parcial" },
-      { id: "s3", name: "Alice Moreira", avatar: "AM", sharePercent: 33.3, expectedValue: 10000, withdrawnValue: 0, status: "Pendente" },
-    ],
-    categories: [
-      { name: "Fornecedores", value: 15000, color: "var(--gold-300)" },
-      { name: "Funcionários", value: 12000, color: "var(--gold-400)" },
-      { name: "Insumos", value: 7000, color: "var(--gold-500)" },
-      { name: "Operacional", value: 5000, color: "#d97706" },
-      { name: "Equipamentos", value: 3000, color: "#b45309" },
-    ],
-    reserveGoal: {
-      current: 34500,
-      target: 50000,
-      objective: "Fundo de Expansão e Capital de Giro",
-    }
-  },
-  "Abril 2026": {
-    month: "Abril 2026",
-    revenue: 90000,
-    expenses: 48000,
-    netProfit: 42000,
-    reserveValue: 12000,
-    partners: [
-      { id: "s1", name: "Clara Silva", avatar: "CS", sharePercent: 33.3, expectedValue: 10000, withdrawnValue: 10000, status: "Pago" },
-      { id: "s2", name: "Beatriz Santos", avatar: "BS", sharePercent: 33.3, expectedValue: 10000, withdrawnValue: 10000, status: "Pago" },
-      { id: "s3", name: "Alice Moreira", avatar: "AM", sharePercent: 33.3, expectedValue: 10000, withdrawnValue: 10000, status: "Pago" },
-    ],
-    categories: [
-      { name: "Fornecedores", value: 18000, color: "var(--gold-300)" },
-      { name: "Funcionários", value: 13500, color: "var(--gold-400)" },
-      { name: "Insumos", value: 8000, color: "var(--gold-500)" },
-      { name: "Operacional", value: 5000, color: "#d97706" },
-      { name: "Equipamentos", value: 3500, color: "#b45309" },
-    ],
-    reserveGoal: {
-      current: 26500,
-      target: 50000,
-      objective: "Reserva Operacional e Contingência",
-    }
-  },
-  "Março 2026": {
-    month: "Março 2026",
-    revenue: 75000,
-    expenses: 39000,
-    netProfit: 36000,
-    reserveValue: 9000,
-    partners: [
-      { id: "s1", name: "Clara Silva", avatar: "CS", sharePercent: 33.3, expectedValue: 9000, withdrawnValue: 9000, status: "Pago" },
-      { id: "s2", name: "Beatriz Santos", avatar: "BS", sharePercent: 33.3, expectedValue: 9000, withdrawnValue: 9000, status: "Pago" },
-      { id: "s3", name: "Alice Moreira", avatar: "AM", sharePercent: 33.3, expectedValue: 9000, withdrawnValue: 4500, status: "Parcial" },
-    ],
-    categories: [
-      { name: "Fornecedores", value: 14000, color: "var(--gold-300)" },
-      { name: "Funcionários", value: 12000, color: "var(--gold-400)" },
-      { name: "Insumos", value: 7000, color: "var(--gold-500)" },
-      { name: "Operacional", value: 4000, color: "#d97706" },
-      { name: "Equipamentos", value: 2000, color: "#b45309" },
-    ],
-    reserveGoal: {
-      current: 17500,
-      target: 50000,
-      objective: "Aquisição de Mobiliário Premium",
-    }
-  }
-};
+const RESERVE_PERCENT = 0.2;
+const RESERVE_GOAL = { target: 50000, objective: "Fundo de Expansão e Capital de Giro", accumulated: 26500 };
 
 const statusStyles: Record<PayoutStatus, { text: string; bg: string; border: string; icon: React.ReactNode }> = {
   Pago: {
@@ -148,7 +71,7 @@ export default function DistribuicaoBuffetPage() {
   const { addExpense, getBuffetExpensesByMonth, getBuffetCategoriesForMonth, buffetMovementLog, addBuffetLog } = useCrmData();
 
   const [selectedMonth, setSelectedMonth] = useState<string>("Maio 2026");
-  const [activeData, setActiveData] = useState<MonthlyData>(mockMonthlyData["Maio 2026"]);
+  const [monthlyWithdrawals, setMonthlyWithdrawals] = useState<Record<string, Record<string, number>>>({});
   const [apiRevenue, setApiRevenue] = useState(0);
   const [apiDespesaList, setApiDespesaList] = useState<{ categoria: string; valor: number }[]>([]);
 
@@ -184,6 +107,17 @@ export default function DistribuicaoBuffetPage() {
     contextExpenses.reduce((s, e) => s + e.value, 0) +
     apiDespesaList.reduce((s, d) => s + d.valor, 0);
   const buffetNetProfit = buffetRevenue - buffetTotalExpenses;
+
+  const reserveValue = buffetNetProfit * RESERVE_PERCENT;
+  const distributableAmount = buffetNetProfit - reserveValue;
+  const currentWithdrawals = monthlyWithdrawals[selectedMonth] ?? {};
+  const activePartners: PartnerPayout[] = PARTNERS.map((p) => {
+    const expectedValue = distributableAmount * (p.sharePercent / 100);
+    const withdrawnValue = currentWithdrawals[p.id] ?? 0;
+    const status: PayoutStatus = withdrawnValue >= expectedValue && expectedValue > 0 ? "Pago" : withdrawnValue > 0 ? "Parcial" : "Pendente";
+    return { ...p, expectedValue, withdrawnValue, status };
+  });
+
   const contextCategories = getBuffetCategoriesForMonth(selectedMonth);
   const mergedCategories: Record<string, number> = { ...contextCategories };
   for (const d of apiDespesaList) {
@@ -272,7 +206,6 @@ export default function DistribuicaoBuffetPage() {
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const month = e.target.value;
     setSelectedMonth(month);
-    setActiveData(mockMonthlyData[month]);
     addBuffetLog(`[SIS] Visualização alterada para ${month}.`);
   };
 
@@ -306,12 +239,9 @@ export default function DistribuicaoBuffetPage() {
 
     const newWithdrawn = Math.min(selectedPartner.withdrawnValue + amountNum, selectedPartner.expectedValue);
     const newStatus: PayoutStatus = newWithdrawn >= selectedPartner.expectedValue ? "Pago" : "Parcial";
-
-    setActiveData(prev => ({
+    setMonthlyWithdrawals(prev => ({
       ...prev,
-      partners: prev.partners.map(p =>
-        p.id === selectedPartner.id ? { ...p, withdrawnValue: newWithdrawn, status: newStatus } : p
-      )
+      [selectedMonth]: { ...(prev[selectedMonth] ?? {}), [selectedPartner.id]: newWithdrawn },
     }));
     addBuffetLog(`[RET] Retirada de ${formatCurrency(amountNum)} registrada — ${selectedPartner.name}. Status: ${newStatus}.`);
     setShowPayoutModal(false);
@@ -432,7 +362,7 @@ export default function DistribuicaoBuffetPage() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Reserva em Caixa</p>
-            <p className="text-2xl font-bold text-[var(--gold-300)] mt-0.5">{formatCurrency(activeData.reserveValue)}</p>
+            <p className="text-2xl font-bold text-[var(--gold-300)] mt-0.5">{formatCurrency(reserveValue)}</p>
           </div>
         </div>
       </div>
@@ -447,12 +377,12 @@ export default function DistribuicaoBuffetPage() {
             </span>
           </div>
           <span className="text-xs text-[var(--text-muted)]">
-            Total Distribuído: {formatCurrency(buffetNetProfit - activeData.reserveValue)}
+            Total Distribuído: {formatCurrency(buffetNetProfit - reserveValue)}
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {activeData.partners.map((partner) => {
+          {activePartners.map((partner) => {
             const progress = partner.expectedValue > 0 ? (partner.withdrawnValue / partner.expectedValue) * 100 : 0;
             const statusConfig = statusStyles[partner.status];
             return (
@@ -538,12 +468,12 @@ export default function DistribuicaoBuffetPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm text-[var(--text-primary)]">Objetivo da Reserva</h3>
-                  <p className="text-xs text-[var(--gold-300)] font-medium">{activeData.reserveGoal.objective}</p>
+                  <p className="text-xs text-[var(--gold-300)] font-medium">{RESERVE_GOAL.objective}</p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Meta Planejada</p>
-                <p className="text-xs font-bold text-[var(--text-primary)]">{formatCurrency(activeData.reserveGoal.target)}</p>
+                <p className="text-xs font-bold text-[var(--text-primary)]">{formatCurrency(RESERVE_GOAL.target)}</p>
               </div>
             </div>
 
@@ -551,25 +481,25 @@ export default function DistribuicaoBuffetPage() {
               <div className="flex justify-between items-center text-xs mb-2">
                 <span className="text-[var(--text-secondary)]">Progresso da Reserva</span>
                 <span className="font-bold text-[var(--gold-300)]">
-                  {((activeData.reserveGoal.current / activeData.reserveGoal.target) * 100).toFixed(1)}% atingido
+                  {((RESERVE_GOAL.accumulated / RESERVE_GOAL.target) * 100).toFixed(1)}% atingido
                 </span>
               </div>
               <div className="relative w-full h-3 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
                 <div
                   className="absolute top-0 left-0 h-full bg-gradient-to-r from-[var(--gold-500)] to-[var(--gold-200)] rounded-full"
-                  style={{ width: `${(activeData.reserveGoal.current / activeData.reserveGoal.target) * 100}%` }}
+                  style={{ width: `${(RESERVE_GOAL.accumulated / RESERVE_GOAL.target) * 100}%` }}
                 />
                 <div
                   className="absolute top-0 h-full bg-emerald-500/50"
                   style={{
-                    left: `${(activeData.reserveGoal.current / activeData.reserveGoal.target) * 100}%`,
-                    width: `${(activeData.reserveValue / activeData.reserveGoal.target) * 100}%`
+                    left: `${(RESERVE_GOAL.accumulated / RESERVE_GOAL.target) * 100}%`,
+                    width: `${(reserveValue / RESERVE_GOAL.target) * 100}%`
                   }}
                 />
               </div>
               <div className="flex justify-between items-center text-[10px] text-[var(--text-muted)] mt-2">
-                <span>Valor atual: {formatCurrency(activeData.reserveGoal.current)}</span>
-                <span className="text-emerald-400 font-medium">+ {formatCurrency(activeData.reserveValue)} este mês</span>
+                <span>Valor atual: {formatCurrency(RESERVE_GOAL.accumulated)}</span>
+                <span className="text-emerald-400 font-medium">+ {formatCurrency(reserveValue)} este mês</span>
               </div>
             </div>
           </div>
@@ -1025,7 +955,7 @@ export default function DistribuicaoBuffetPage() {
                     </div>
                     <div className="bg-amber-50 border border-amber-200 rounded p-3">
                       <p className="text-amber-600 text-[10px] uppercase font-semibold">Reserva em Caixa</p>
-                      <p className="font-bold text-amber-800 text-sm font-mono mt-0.5">{formatCurrency(activeData.reserveValue)}</p>
+                      <p className="font-bold text-amber-800 text-sm font-mono mt-0.5">{formatCurrency(reserveValue)}</p>
                     </div>
                   </div>
                 </div>
@@ -1034,7 +964,7 @@ export default function DistribuicaoBuffetPage() {
                 <div className="mb-6 font-sans" style={{ fontFamily: "sans-serif" }}>
                   <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-3">Distribuição das Sócias</h4>
                   <div className="space-y-2">
-                    {activeData.partners.map((p) => (
+                    {activePartners.map((p: PartnerPayout) => (
                       <div key={p.id} className="flex justify-between items-center text-xs border-b border-neutral-100 pb-2">
                         <span className="font-semibold text-neutral-800">{p.name} <span className="font-normal text-neutral-400">({p.sharePercent}%)</span></span>
                         <div className="text-right">

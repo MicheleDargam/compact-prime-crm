@@ -7,7 +7,17 @@ export async function GET() {
       where: { deleted_at: null, ativo: true },
       orderBy: { nome: "asc" },
     });
-    return NextResponse.json({ ok: true, data: funcionarios });
+    return NextResponse.json({
+      ok: true,
+      data: funcionarios.map((f) => ({
+        id: f.id,
+        nome: f.nome,
+        funcao: f.funcao,
+        telefone: f.telefone ?? "",
+        status: "Ativo" as const,
+        disponibilidade: "Disponível" as const,
+      })),
+    });
   } catch (error) {
     console.error("[GET /api/funcionarios]", error);
     return NextResponse.json({ ok: false, error: "Erro interno." }, { status: 500 });
