@@ -715,7 +715,7 @@ export default function DistribuicaoBuffetPage() {
                       {EXPENSE_CATEGORIES.filter((c) => c !== "Funcionários").map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
                     <p className="text-[10px] text-[var(--text-muted)] italic mt-0.5">
-                      Pagamentos de equipe devem ser registrados na página Funcionários.
+                      Pagamentos de equipe devem ser registrados na página Equipe.
                     </p>
                   </div>
 

@@ -272,7 +272,7 @@ export default function FuncionariosPage() {
             <Sparkles className="w-3.5 h-3.5 animate-pulse" />
             <span>Gestão Operacional de Equipe</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mt-1">Funcionários</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mt-1">Equipe</h1>
           <p className="text-sm md:text-base text-[var(--text-secondary)] mt-0.5">Gestão operacional da equipe de eventos</p>
         </div>
 
@@ -315,14 +315,14 @@ export default function FuncionariosPage() {
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         
-        {/* Card 1: Funcionários Ativos */}
+        {/* Card 1: Equipe Ativa */}
         <div className="bg-[var(--bg-card)] p-5 rounded-xl border border-[var(--border-default)] shadow-card flex items-center gap-4 transition-all hover:bg-[var(--bg-card-hover)] hover:shadow-card-hover group relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-[var(--gold-300)]/20 to-[var(--gold-500)]/40 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="p-3 bg-[var(--gold-500)]/10 rounded-lg text-[var(--gold-300)] group-hover:scale-105 transition-transform duration-300">
             <Users className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Funcionários Ativos</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Equipe Ativa</p>
             <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{activeColabCount} Colaboradores</p>
           </div>
         </div>

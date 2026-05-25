@@ -7,13 +7,13 @@ import { usePathname, useRouter } from "next/navigation";
 type NavItem = { label: string; icon: string; href: string };
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", icon: "dashboard", href: "/" },
+  { label: "Painel de Análises", icon: "dashboard", href: "/" },
   { label: "Painel de Clientes", icon: "kanban", href: "/kanban" },
   { label: "Agenda", icon: "agenda", href: "/agenda" },
   { label: "Propostas", icon: "propostas", href: "/propostas" },
   { label: "Financeiro", icon: "financeiro", href: "/financeiro" },
   { label: "Distribuição Buffet", icon: "socias", href: "/socias-caixa" },
-  { label: "Funcionários", icon: "funcionarios", href: "/funcionarios" },
+  { label: "Equipe", icon: "funcionarios", href: "/funcionarios" },
   { label: "Configurações", icon: "config", href: "/configuracoes" },
 ];
 

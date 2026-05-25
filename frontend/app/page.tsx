@@ -121,7 +121,7 @@ export default function DashboardAnalytics() {
                 <BarChart3 className="w-5 h-5 text-blue-400" />
               </div>
               <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
-                Dashboard
+                Painel de Análises
               </h1>
             </div>
             <p className="text-sm italic text-[var(--gold-300)]">
