@@ -18,6 +18,7 @@ import {
   Save,
   Building2,
   User,
+  MessageCircle,
 } from "lucide-react";
 import {
   type ServiceType,
@@ -199,12 +200,32 @@ export default function PropostasPage() {
     setShowPdfModal(true);
   };
 
-  const handleMockDownload = () => {
-    setDownloading(true);
-    setTimeout(() => {
-      setDownloading(false);
-      setShowPdfModal(false);
-    }, 1500);
+  const handleDownloadProposta = () => {
+    if (!selectedProposal) return;
+    const formatC = (val: number) =>
+      new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+    const servicosHTML = selectedProposal.servicosContratados.map((srv) => {
+      const valor = selectedProposal.valoresPorServico[srv]
+        ? formatC(selectedProposal.valoresPorServico[srv]! / 100)
+        : "R$ 0,00";
+      return `<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:600">${SERVICES[srv]?.label || srv}</td><td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace">${valor}</td></tr>`;
+    }).join("");
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Proposta – ${selectedProposal.client}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;color:#111;background:#fff;padding:40px}h1{font-size:18px;color:#92400e;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}p{margin:0}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#f9f9f9;padding:6px 8px;border:1px solid #e5e7eb;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}.total-row td{font-weight:700;font-size:13px;border-top:2px solid #92400e}.section-title{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#6b7280;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:12px;font-family:sans-serif;font-weight:700}@media print{body{padding:20px}}</style></head><body><div style="border-bottom:2px solid #b45309;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between"><div><h1>${empresa.nome_fantasia}</h1><p style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;font-family:sans-serif">${empresa.slogan}</p></div><div style="text-align:right;font-size:11px;color:#6b7280;font-family:sans-serif"><p>Data: ${selectedProposal.sendDate}</p><p style="margin-top:4px">Validade: ${selectedProposal.validity}</p><p style="font-family:monospace;font-size:10px;font-weight:700;margin-top:4px">ORC-${selectedProposal.id}2026</p></div></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px"><p style="font-weight:600;color:#1f2937;font-size:13px">Prezado(a) ${selectedProposal.client},</p><p style="margin-top:8px;color:#4b5563;line-height:1.6">Agradecemos a oportunidade de apresentar nosso orçamento personalizado para o seu evento. Abaixo detalhamos os serviços integrados e os respectivos valores operacionais conforme as premissas acordadas.</p></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px;background:#f9f9f9;border:1px solid #e5e7eb;border-radius:4px;padding:12px"><p class="section-title" style="margin-bottom:8px">Premissas do Evento</p><p><strong>Cliente:</strong> ${selectedProposal.client} &nbsp;&nbsp; <strong>Tipo de Evento:</strong> ${selectedProposal.eventType}</p></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px"><p class="section-title">Serviços Contratados</p><table><thead><tr><th>Serviço</th><th style="text-align:right">Valor</th></tr></thead><tbody>${servicosHTML}<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;color:#6b7280">Subtotal</td><td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#6b7280">${formatC(selectedProposal.subtotalCents / 100)}</td></tr>${selectedProposal.descontoCombo > 0 ? `<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;color:#059669">Desconto Combo (${selectedProposal.descontoCombo * 100}%)</td><td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#059669">-${formatC((selectedProposal.subtotalCents - selectedProposal.totalCents) / 100)}</td></tr>` : ""}<tr class="total-row"><td style="padding:8px;border:1px solid #e5e7eb">Valor Final Líquido</td><td style="padding:8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#92400e">${formatC(selectedProposal.totalCents / 100)}</td></tr></tbody></table></div><div style="margin-top:32px;padding-top:12px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;font-family:sans-serif"><div style="font-size:9px;color:#9ca3af"><p>Compact Prime CRM — Documento Comercial Informativo.</p><p style="margin-top:4px">Assinado digitalmente por Compact Prime Ltda.</p></div><div style="border:2px solid rgba(5,150,105,0.35);padding:6px 12px;border-radius:4px;background:rgba(5,150,105,0.05);color:#059669;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-family:monospace">Orçamento Aprovado</div></div></body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 400);
+  };
+
+  const handleWhatsAppProposta = () => {
+    if (!selectedProposal) return;
+    const formatC = (val: number) =>
+      new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+    const servicos = selectedProposal.servicosContratados
+      .map((srv) => `• ${SERVICES[srv]?.label || srv}: ${selectedProposal.valoresPorServico[srv] ? formatC(selectedProposal.valoresPorServico[srv]! / 100) : "R$ 0,00"}`)
+      .join("\n");
+    const msg = `Olá ${selectedProposal.client}! 👋\n\nSegue o resumo da sua proposta comercial da *${empresa.nome_fantasia}*:\n\n*Tipo de Evento:* ${selectedProposal.eventType}\n\n*Serviços:*\n${servicos}\n\n*Valor Total: ${formatC(selectedProposal.totalCents / 100)}*\nValidade: ${selectedProposal.validity}\n\nQualquer dúvida, estamos à disposição! 😊`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   const handleOpenEdit = (proposal: Proposal) => {
@@ -249,6 +270,37 @@ export default function PropostasPage() {
     setContractProposal(proposal);
     setContractClausulas([...clausulas]);
     setShowContractModal(true);
+  };
+
+  const handleDownloadContrato = () => {
+    if (!contractProposal) return;
+    const formatC = (val: number) =>
+      new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+    const servicosHTML = contractProposal.servicosContratados.map((srv) => {
+      const valor = contractProposal.valoresPorServico[srv]
+        ? formatC(contractProposal.valoresPorServico[srv]! / 100)
+        : "R$ 0,00";
+      return `<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:600">${SERVICES[srv]?.label || srv}</td><td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace">${valor}</td></tr>`;
+    }).join("");
+    const clausulasHTML = contractClausulas.map((c) =>
+      `<div style="margin-bottom:12px"><p style="font-weight:700;font-size:11px;color:#1f2937">Cláusula ${c.num} — ${c.titulo}</p><p style="margin-top:4px;color:#4b5563;line-height:1.6;font-size:11px">${c.texto}</p></div>`
+    ).join("");
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Contrato – ${contractProposal.client}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;color:#111;background:#fff;padding:40px}h1{font-size:18px;color:#92400e;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}p{margin:0}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#f9f9f9;padding:6px 8px;border:1px solid #e5e7eb;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}.total-row td{font-weight:700;font-size:13px;border-top:2px solid #92400e}.section-title{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#6b7280;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:12px;font-family:sans-serif;font-weight:700}.sig-line{border-top:1px solid #9ca3af;padding-top:6px;text-align:center;font-size:11px;font-family:sans-serif}@media print{body{padding:20px}}</style></head><body><div style="border-bottom:2px solid #b45309;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between"><div><h1>${empresa.nome_fantasia}</h1><p style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;font-family:sans-serif">${empresa.slogan}</p></div><div style="text-align:right;font-size:11px;color:#6b7280;font-family:sans-serif"><p>Data: ${contractProposal.sendDate}</p><p style="margin-top:4px">Validade: ${contractProposal.validity}</p></div></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px"><p class="section-title">1. Partes</p><p><strong>Contratante:</strong> ${contractProposal.client}</p><p style="margin-top:4px"><strong>Contratada:</strong> ${empresa.razao_social || empresa.nome_fantasia}</p>${empresa.cnpj ? `<p style="margin-top:4px"><strong>CNPJ:</strong> ${empresa.cnpj}</p>` : ""}</div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px"><p class="section-title">Serviços Contratados</p><table><thead><tr><th>Serviço</th><th style="text-align:right">Valor</th></tr></thead><tbody>${servicosHTML}<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;color:#6b7280">Subtotal</td><td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#6b7280">${formatC(contractProposal.subtotalCents / 100)}</td></tr>${contractProposal.descontoCombo > 0 ? `<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;color:#059669">Desconto Combo (${contractProposal.descontoCombo * 100}%)</td><td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#059669">-${formatC((contractProposal.subtotalCents - contractProposal.totalCents) / 100)}</td></tr>` : ""}<tr class="total-row"><td style="padding:8px;border:1px solid #e5e7eb">Valor Total Líquido</td><td style="padding:8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#92400e">${formatC(contractProposal.totalCents / 100)}</td></tr></tbody></table></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px"><p class="section-title">Cláusulas e Condições Gerais</p>${clausulasHTML}</div><div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:48px;font-family:sans-serif"><div class="sig-line"><p style="font-weight:600;color:#1f2937">${contractProposal.client}</p><p style="font-size:10px;color:#9ca3af;margin-top:4px">Contratante</p></div><div class="sig-line"><p style="font-weight:600;color:#1f2937">${empresa.razao_social || empresa.nome_fantasia}</p><p style="font-size:10px;color:#9ca3af;margin-top:4px">Contratada</p></div></div></body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 400);
+  };
+
+  const handleWhatsApp = () => {
+    if (!contractProposal) return;
+    const formatC = (val: number) =>
+      new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+    const servicos = contractProposal.servicosContratados
+      .map((srv) => `• ${SERVICES[srv]?.label || srv}: ${contractProposal.valoresPorServico[srv] ? formatC(contractProposal.valoresPorServico[srv]! / 100) : "R$ 0,00"}`)
+      .join("\n");
+    const msg = `Olá ${contractProposal.client}! 👋\n\nSegue o resumo do seu contrato com a *${empresa.nome_fantasia}*:\n\n*Tipo de Evento:* ${contractProposal.eventType}\n\n*Serviços Contratados:*\n${servicos}\n\n*Valor Total: ${formatC(contractProposal.totalCents / 100)}*\n\nEntre em contato para dúvidas ou assinar o contrato. 😊`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   return (
@@ -421,7 +473,7 @@ export default function PropostasPage() {
                           title="Visualizar proposta comercial em PDF"
                         >
                           <FileDown className="w-3.5 h-3.5 stroke-[2.5]" />
-                          PDF
+                          Proposta
                         </button>
                         <button
                           onClick={() => handleOpenEdit(proposal)}
@@ -502,7 +554,7 @@ export default function PropostasPage() {
                       className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[var(--gold-400)] bg-[var(--gold-500)]/5 hover:bg-[var(--gold-500)]/15 border border-[var(--gold-500)]/20 rounded-lg transition-all cursor-pointer"
                     >
                       <FileDown className="w-3.5 h-3.5" />
-                      PDF
+                      Proposta
                     </button>
                     <button
                       onClick={() => handleOpenEdit(proposal)}
@@ -643,11 +695,18 @@ export default function PropostasPage() {
                   Fechar
                 </button>
                 <button
-                  onClick={handleMockDownload}
-                  disabled={downloading}
-                  className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-[var(--gold-500)] to-[var(--gold-300)] hover:from-[var(--gold-600)] hover:to-[var(--gold-400)] text-black rounded-lg text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md"
+                  onClick={handleDownloadProposta}
+                  className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-[var(--gold-500)] to-[var(--gold-300)] hover:from-[var(--gold-600)] hover:to-[var(--gold-400)] text-black rounded-lg text-xs font-bold transition-all cursor-pointer shadow-md"
                 >
-                  {downloading ? "Aguarde..." : <><FileDown className="w-4 h-4 text-black stroke-[3]" /> Download PDF</>}
+                  <FileDown className="w-4 h-4 text-black stroke-[3]" />
+                  Baixar Proposta
+                </button>
+                <button
+                  onClick={handleWhatsAppProposta}
+                  className="flex items-center gap-2 px-5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-md"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 stroke-[2.5]" />
+                  Enviar via WhatsApp
                 </button>
               </div>
             </div>
@@ -988,10 +1047,18 @@ export default function PropostasPage() {
                 Fechar
               </button>
               <button
-                className="flex items-center gap-2 px-5 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-md"
+                onClick={handleDownloadContrato}
+                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-[var(--gold-500)] to-[var(--gold-300)] hover:from-[var(--gold-600)] hover:to-[var(--gold-400)] text-black rounded-lg text-xs font-bold transition-all cursor-pointer shadow-md"
               >
-                <ScrollText className="w-3.5 h-3.5 stroke-[2.5]" />
-                Confirmar Contrato
+                <FileDown className="w-3.5 h-3.5 stroke-[3]" />
+                Baixar Contrato
+              </button>
+              <button
+                onClick={handleWhatsApp}
+                className="flex items-center gap-2 px-5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-md"
+              >
+                <MessageCircle className="w-3.5 h-3.5 stroke-[2.5]" />
+                Enviar via WhatsApp
               </button>
             </div>
           </div>
