@@ -65,6 +65,12 @@ export default function FuncionariosPage() {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [registros, setRegistros] = useState<RegistroHora[]>([]);
 
+  const loadData = () => {
+    fetch("/api/funcionarios").then(r => r.json()).then(json => { if (json.ok) setColaboradores(json.data as Colaborador[]); }).catch(() => {});
+    fetch("/api/funcionarios/eventos").then(r => r.json()).then(json => { if (json.ok) setEventos(json.data as Evento[]); }).catch(() => {});
+    fetch("/api/funcionarios/registros").then(r => r.json()).then(json => { if (json.ok) setRegistros(json.data as RegistroHora[]); }).catch(() => {});
+  };
+
   useEffect(() => { loadData(); }, []);
   
   // UI State: Filtering
@@ -103,11 +109,7 @@ export default function FuncionariosPage() {
     }, 4000);
   };
 
-  const loadData = () => {
-    fetch("/api/funcionarios").then(r => r.json()).then(json => { if (json.ok) setColaboradores(json.data as Colaborador[]); }).catch(() => {});
-    fetch("/api/funcionarios/eventos").then(r => r.json()).then(json => { if (json.ok) setEventos(json.data as Evento[]); }).catch(() => {});
-    fetch("/api/funcionarios/registros").then(r => r.json()).then(json => { if (json.ok) setRegistros(json.data as RegistroHora[]); }).catch(() => {});
-  };
+
 
   // Handlers
   const handleAddEmployee = async (e: React.FormEvent) => {

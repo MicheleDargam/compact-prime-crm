@@ -645,7 +645,7 @@ export default function ConfiguacoesPage() {
                       <div className="text-center py-10 border border-dashed border-[var(--border-subtle)] rounded-xl flex flex-col items-center gap-2">
                         <Sparkles className="w-6 h-6 text-[var(--text-muted)]/40" />
                         <p className="text-xs text-[var(--text-muted)]">Nenhuma promoção ativa no momento.</p>
-                        <p className="text-[10px] text-[var(--text-muted)]/60">Crie regras na seção "Regras Comerciais de Promoção" abaixo.</p>
+                        <p className="text-[10px] text-[var(--text-muted)]/60">Crie regras na seção &quot;Regras Comerciais de Promoção&quot; abaixo.</p>
                       </div>
                     )}
 

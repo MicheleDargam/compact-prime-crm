@@ -62,7 +62,7 @@ export default function LoginPage() {
           </h1>
 
           <p className="text-xl font-light text-[var(--text-secondary)] italic mb-6">
-            "Qualidade que encanta, sabor que marca"
+            &quot;Qualidade que encanta, sabor que marca&quot;
           </p>
 
           <div className="h-px w-24 bg-gradient-to-r from-transparent via-[var(--gold-400)] to-transparent mx-auto mb-6 opacity-50" />
