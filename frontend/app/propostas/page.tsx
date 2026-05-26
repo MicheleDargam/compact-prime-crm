@@ -101,11 +101,7 @@ const serviceFilterOptions = ["Todos", "Buffet", "Decoração", "Fotografia", "C
 const allServiceTypes: ServiceType[] = ["buffet", "decoracao", "fotografia"];
 const eventTypes: EventType[] = ["Casamento", "Infantil", "Corporativo", "Adulto"];
 
-const srvDescriptionMap: Record<string, string> = {
-  buffet: "Gastronomia fina com menu completo, coquetel de boas-vindas, prato principal, sobremesas, louças premium e serviço profissional de copeiras e garçons.",
-  decoracao: "Ambiente floral com design exclusivo, lounges premium, passadeira, cortinários em voil e iluminação cênica harmoniosa.",
-  fotografia: "Cobertura fotográfica completa do evento com equipe dedicada, ensaio pré-wedding e galeria digital com tratamento de imagem em alta definição.",
-};
+
 
 const clausulas = [
   {
@@ -172,6 +168,7 @@ export default function PropostasPage() {
   // Contract Modal
   const [showContractModal, setShowContractModal] = useState(false);
   const [contractProposal, setContractProposal] = useState<Proposal | null>(null);
+  const [contractClausulas, setContractClausulas] = useState([...clausulas]);
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
@@ -250,6 +247,7 @@ export default function PropostasPage() {
 
   const handleOpenContract = (proposal: Proposal) => {
     setContractProposal(proposal);
+    setContractClausulas([...clausulas]);
     setShowContractModal(true);
   };
 
@@ -589,7 +587,7 @@ export default function PropostasPage() {
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
                               {SERVICES[srv]?.label || srv}
                             </span>
-                            <p className="text-[10px] text-neutral-500 mt-1 leading-relaxed">{srvDescriptionMap[srv]}</p>
+
                           </div>
                           <span className="font-bold text-neutral-800 font-mono text-right shrink-0">
                             {selectedProposal.valoresPorServico[srv] ? formatCurrency(selectedProposal.valoresPorServico[srv]! / 100) : "R$ 0,00"}
@@ -870,7 +868,7 @@ export default function PropostasPage() {
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-700 shrink-0" />
                             {SERVICES[srv]?.label || srv}
                           </span>
-                          <p className="text-[10px] text-neutral-500 mt-0.5 leading-relaxed max-w-xs">{srvDescriptionMap[srv]}</p>
+
                         </div>
                         <span className="font-bold text-neutral-800 font-mono shrink-0 ml-4">
                           {contractProposal.valoresPorServico[srv] ? formatCurrency(contractProposal.valoresPorServico[srv]! / 100) : "R$ 0,00"}
@@ -911,10 +909,39 @@ export default function PropostasPage() {
                 <div className="font-sans text-xs" style={{ fontFamily: "sans-serif" }}>
                   <h4 className="font-bold text-neutral-800 uppercase text-[10px] tracking-wider border-b border-neutral-200 pb-1.5 mb-3">6. Cláusulas e Condições Gerais</h4>
                   <div className="space-y-3 text-neutral-700">
-                    {clausulas.map((c) => (
-                      <div key={c.num}>
-                        <p className="font-bold text-neutral-800 text-[11px]">Cláusula {c.num} — {c.titulo}</p>
-                        <p className="mt-0.5 leading-relaxed text-neutral-600">{c.texto}</p>
+                    {contractClausulas.map((c, index) => (
+                      <div key={c.num} className="group relative">
+                        <div className="flex items-center">
+                          <span className="font-bold text-neutral-800 text-[11px] whitespace-nowrap">Cláusula {c.num} — </span>
+                          <input 
+                            type="text" 
+                            value={c.titulo} 
+                            onChange={(e) => {
+                              const newC = [...contractClausulas];
+                              newC[index] = { ...newC[index], titulo: e.target.value };
+                              setContractClausulas(newC);
+                            }}
+                            className="font-bold text-neutral-800 text-[11px] bg-transparent border border-transparent hover:border-neutral-200 focus:border-amber-500/50 focus:bg-white focus:ring-2 focus:ring-amber-500/10 outline-none flex-1 px-1.5 py-0.5 ml-1 rounded transition-all"
+                          />
+                        </div>
+                        <textarea 
+                          value={c.texto} 
+                          onChange={(e) => {
+                            const newC = [...contractClausulas];
+                            newC[index] = { ...newC[index], texto: e.target.value };
+                            setContractClausulas(newC);
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.height = 'auto';
+                            e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                          }}
+                          onInput={(e) => {
+                            e.currentTarget.style.height = 'auto';
+                            e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                          }}
+                          className="mt-0.5 leading-relaxed text-neutral-600 w-full bg-transparent border border-transparent hover:border-neutral-200 focus:border-amber-500/50 focus:bg-white focus:ring-2 focus:ring-amber-500/10 outline-none px-1.5 py-1 -ml-1.5 rounded resize-none overflow-hidden transition-all"
+                          rows={Math.max(2, Math.ceil(c.texto.length / 100))}
+                        />
                       </div>
                     ))}
                   </div>
