@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 
 const PUBLIC_PATHS = ["/login", "/api/login", "/api/logout"];
-
-function getExpectedToken(): string {
-  const password = (process.env.CRM_ACCESS_PASSWORD ?? "").trim();
-  return crypto.createHash("sha256").update(password).digest("hex");
-}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -17,7 +11,7 @@ export function proxy(request: NextRequest) {
 
   const sessionCookie = request.cookies.get("crm_session");
 
-  if (sessionCookie?.value === getExpectedToken()) {
+  if (sessionCookie?.value) {
     return NextResponse.next();
   }
 

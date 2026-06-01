@@ -1,37 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
-
-function getToken(password: string): string {
-  return crypto.createHash("sha256").update(password).digest("hex");
-}
+import { supabase } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
-  let body: { password?: string };
+  let body: { email?: string; password?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ ok: false, error: "Requisição inválida." }, { status: 400 });
   }
 
-  const { password } = body;
-  const expected = process.env.CRM_ACCESS_PASSWORD;
+  const { email, password } = body;
 
-  if (!expected) {
-    return NextResponse.json(
-      { ok: false, error: "Senha de acesso não configurada no servidor." },
-      { status: 500 }
-    );
+  if (!email || !password) {
+    return NextResponse.json({ ok: false, error: "E-mail e senha são obrigatórios." }, { status: 400 });
   }
 
-  if (!password || password.trim() !== expected.trim()) {
-    return NextResponse.json({ ok: false, error: "Senha incorreta." }, { status: 401 });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error || !data.session) {
+    return NextResponse.json({ ok: false, error: "E-mail ou senha incorretos." }, { status: 401 });
   }
 
-  const token = getToken(expected.trim());
   const isProduction = process.env.NODE_ENV === "production";
-
   const response = NextResponse.json({ ok: true });
-  response.cookies.set("crm_session", token, {
+  response.cookies.set("crm_session", data.session.access_token, {
     httpOnly: true,
     sameSite: "lax",
     secure: isProduction,

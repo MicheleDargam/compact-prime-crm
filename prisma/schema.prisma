@@ -280,7 +280,7 @@ model pagamentos {
   @@index([cliente_id], map: "idx_pag_cliente")
   @@index([contrato_id], map: "idx_pag_contrato", where: raw("(contrato_id IS NOT NULL)"))
   @@index([evento_id], map: "idx_pag_evento")
-  @@index([data_pagamento], map: "idx_pag_pendentes", where: raw("((status)::text = ANY ((ARRAY['pendente'::character varying, 'parcial'::character varying])::text[]))"))
+  @@index([data_pagamento], map: "idx_pag_pendentes", where: raw("((status)::text = ANY (ARRAY[('pendente'::character varying)::text, ('parcial'::character varying)::text]))"))
   @@index([status], map: "idx_pag_status")
 }
 
@@ -301,7 +301,7 @@ model parcelas {
 
   @@unique([pagamento_id, numero_parcela], map: "uq_parcela_numero")
   @@index([pagamento_id], map: "idx_parcelas_pagamento")
-  @@index([vencimento, status], map: "idx_parcelas_pendentes", where: raw("((status)::text = ANY ((ARRAY['pendente'::character varying, 'atrasado'::character varying])::text[]))"))
+  @@index([vencimento, status], map: "idx_parcelas_pendentes", where: raw("((status)::text = ANY (ARRAY[('pendente'::character varying)::text, ('atrasado'::character varying)::text]))"))
   @@index([vencimento], map: "idx_parcelas_vencimento")
 }
 
@@ -406,8 +406,8 @@ model configuracoes_empresa {
   cargo_responsavel String?  @db.VarChar(100)
   assinatura_texto  String?  @db.VarChar(200)
   slogan            String?
-  logo_url          String?  @db.VarChar(500)
   updated_at        DateTime @default(now()) @db.Timestamptz(6)
+  logo_url          String?  @db.VarChar(500)
 }
 
 model servicos {

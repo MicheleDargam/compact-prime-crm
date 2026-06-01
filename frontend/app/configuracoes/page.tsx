@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { ServiceBadge } from "@/app/components/ServiceBadge";
 
-type TabId = "empresa" | "servicos" | "socias" | "financeiro" | "integracoes" | "visual" | "clientes";
+type TabId = "empresa" | "servicos" | "socias" | "financeiro" | "integracoes" | "visual" | "clientes" | "seguranca";
 
 interface TabItem {
   id: TabId;
@@ -112,6 +112,14 @@ export default function ConfiguacoesPage() {
 
   const [prioridadeVip, setPrioridadeVip] = useState<"Normal" | "Alta" | "Máxima">("Máxima");
 
+  // Security / Change Password States
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [senhaLoading, setSenhaLoading] = useState(false);
+  const [senhaError, setSenhaError] = useState("");
+  const [senhaSuccess, setSenhaSuccess] = useState(false);
+
   // Preferences Toggles
   const [temaEscuro, setTemaEscuro] = useState(true);
   const [identidadeDourada, setIdentidadeDourada] = useState(true);
@@ -125,6 +133,7 @@ export default function ConfiguacoesPage() {
     { id: "integracoes", label: "Integrações Futuras", icon: <Link2 className="w-4 h-4" /> },
     { id: "visual", label: "Visual & Temas", icon: <Eye className="w-4 h-4" /> },
     { id: "clientes", label: "Clientes & Categorias", icon: <Tag className="w-4 h-4" /> },
+    { id: "seguranca", label: "Segurança", icon: <Lock className="w-4 h-4" /> },
   ];
 
   useEffect(() => {
@@ -196,6 +205,44 @@ export default function ConfiguacoesPage() {
       // silent
     } finally {
       setEmpresaLoading(false);
+    }
+  };
+
+  const handleChangeSenha = async () => {
+    setSenhaError("");
+    setSenhaSuccess(false);
+    if (!senhaAtual || !novaSenha || !confirmarSenha) {
+      setSenhaError("Preencha todos os campos.");
+      return;
+    }
+    if (novaSenha !== confirmarSenha) {
+      setSenhaError("A nova senha e a confirmação não coincidem.");
+      return;
+    }
+    if (novaSenha.length < 6) {
+      setSenhaError("A nova senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    setSenhaLoading(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: senhaAtual, newPassword: novaSenha }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setSenhaSuccess(true);
+        setSenhaAtual("");
+        setNovaSenha("");
+        setConfirmarSenha("");
+      } else {
+        setSenhaError(json.error ?? "Erro ao alterar senha.");
+      }
+    } catch {
+      setSenhaError("Erro de conexão. Tente novamente.");
+    } finally {
+      setSenhaLoading(false);
     }
   };
 
@@ -1587,6 +1634,72 @@ export default function ConfiguacoesPage() {
                 >
                   <Save className="w-4 h-4 text-black stroke-[3]" />
                   Salvar Configurações
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "seguranca" && (
+            <div className="flex flex-col gap-6">
+              <div>
+                <h3 className="text-base font-semibold text-[var(--text-primary)]">Alterar Senha</h3>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Cada usuária altera apenas a própria senha da conta.</p>
+              </div>
+
+              <div className="flex flex-col gap-4 max-w-md">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">Senha Atual</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={senhaAtual}
+                    onChange={(e) => setSenhaAtual(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--gold-400)] focus:border-[var(--gold-400)] transition-colors"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">Nova Senha</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={novaSenha}
+                    onChange={(e) => setNovaSenha(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--gold-400)] focus:border-[var(--gold-400)] transition-colors"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">Confirmar Nova Senha</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmarSenha}
+                    onChange={(e) => setConfirmarSenha(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--gold-400)] focus:border-[var(--gold-400)] transition-colors"
+                  />
+                </div>
+
+                {senhaError && (
+                  <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                    {senhaError}
+                  </p>
+                )}
+
+                {senhaSuccess && (
+                  <p className="text-xs text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                    Senha alterada com sucesso!
+                  </p>
+                )}
+
+                <button
+                  onClick={handleChangeSenha}
+                  disabled={senhaLoading}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed w-fit"
+                >
+                  <Lock className="w-4 h-4 text-black stroke-[3]" />
+                  {senhaLoading ? "Alterando..." : "Alterar Senha"}
                 </button>
               </div>
             </div>
