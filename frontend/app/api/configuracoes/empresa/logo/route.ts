@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 
 const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
+  (process.env.URL_SUPABASE ?? process.env.SUPABASE_URL)!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { persistSession: false } }
 );

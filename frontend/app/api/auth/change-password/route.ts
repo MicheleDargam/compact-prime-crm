@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   // Create a user-scoped client using the session token from the cookie
   const supabaseUser = createClient(
-    process.env.SUPABASE_URL!,
+    (process.env.URL_SUPABASE ?? process.env.SUPABASE_URL)!,
     process.env.SUPABASE_ANON_KEY!,
     {
       auth: {
