@@ -64,30 +64,89 @@ const filterOptions: FilterType[] = ["Todos", "Buffet", "Decoração", "Fotograf
 export default function DashboardAnalytics() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("Todos");
   const [dbData, setDbData] = useState<DbData | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then((json) => { if (json.ok) setDbData(json.data); })
-      .catch(() => {});
+    let cancelled = false;
+    const MAX_RETRIES = 3;
+
+    async function loadDashboard(attempt: number) {
+      try {
+        setLoadError(false);
+        const controller = new AbortController();
+        // Timeout de 20s — cobre cold start do Supabase
+        const timeout = setTimeout(() => controller.abort(), 20_000);
+
+        const res = await fetch("/api/dashboard", { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!res.ok) {
+          let errorMsg = `HTTP ${res.status}`;
+          try {
+            const errJson = await res.json();
+            if (errJson.error) errorMsg = errJson.error;
+          } catch(e) {}
+          throw new Error(errorMsg);
+        }
+        
+        const json = await res.json();
+
+        if (!cancelled) {
+          if (json.ok) {
+            setDbData(json.data);
+            setLoadError(false);
+          } else {
+            throw new Error(json.error || "Erro na API");
+          }
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.error(`[Dashboard] Tentativa ${attempt + 1} falhou:`, err);
+
+        if (attempt < MAX_RETRIES - 1) {
+          // Retry com backoff: 2s, 4s, 8s
+          const delay = Math.pow(2, attempt + 1) * 1000;
+          setTimeout(() => {
+            if (!cancelled) {
+              setRetryCount(attempt + 1);
+              loadDashboard(attempt + 1);
+            }
+          }, delay);
+        } else {
+          setLoadError(true);
+        }
+      }
+    }
+
+    loadDashboard(0);
+    return () => { cancelled = true; };
   }, []);
 
   const now = new Date();
   const mesAnteriorLabel = now.toLocaleDateString("pt-BR", { month: "long" });
 
+  // Estado de carregamento e erro para os cards
+  const isLoading = !dbData && !loadError;
+  const statusText = loadError
+    ? "Erro ao conectar"
+    : retryCount > 0 && !dbData
+      ? `Reconectando... (${retryCount}/3)`
+      : "Carregando...";
+
   const kpis = {
     receita: dbData ? formatBRL(dbData.receitaMes) : "—",
-    receitaGrowth: dbData ? growthStr(dbData.receitaMes, dbData.receitaMesAnterior, mesAnteriorLabel) : "Carregando...",
+    receitaGrowth: dbData ? growthStr(dbData.receitaMes, dbData.receitaMesAnterior, mesAnteriorLabel) : statusText,
     leads: dbData ? String(dbData.leadsNoMes) : "—",
-    leadsGrowth: dbData ? growthStr(dbData.leadsNoMes, dbData.leadsMesAnterior, mesAnteriorLabel) : "Carregando...",
+    leadsGrowth: dbData ? growthStr(dbData.leadsNoMes, dbData.leadsMesAnterior, mesAnteriorLabel) : statusText,
     eventos: dbData ? String(dbData.eventosFechados) : "—",
     eventosDesc: dbData
       ? Object.entries(dbData.eventosPorTipo).slice(0, 3).map(([t, c]) => `${c} ${t.toLowerCase()}`).join(", ") || "Sem eventos"
-      : "Carregando...",
+      : statusText,
     conversao: dbData && dbData.eventosTotais > 0
       ? `${((dbData.eventosFechados / dbData.eventosTotais) * 100).toFixed(1)}%`
       : "—",
-    conversaoGrowth: dbData ? `${dbData.eventosFechados} fechados de ${dbData.eventosTotais} totais` : "Carregando...",
+    conversaoGrowth: dbData ? `${dbData.eventosFechados} fechados de ${dbData.eventosTotais} totais` : statusText,
   };
 
   const eventTypeColors: Record<string, string> = {
@@ -180,8 +239,8 @@ export default function DashboardAnalytics() {
           </div>
           <div>
             <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{kpis.receita}</p>
-            <p className={`text-xs flex items-center gap-1 mt-1 font-medium transition-colors ${kpis.receitaGrowth.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-              <ArrowUpRight className={`w-3 h-3 ${kpis.receitaGrowth.startsWith('-') ? 'rotate-90' : ''}`} />
+            <p className={`text-xs flex items-center gap-1 mt-1 font-medium transition-colors ${loadError ? 'text-red-400' : !dbData ? 'text-amber-400 animate-pulse' : kpis.receitaGrowth.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+              {dbData && <ArrowUpRight className={`w-3 h-3 ${kpis.receitaGrowth.startsWith('-') ? 'rotate-90' : ''}`} />}
               {kpis.receitaGrowth}
             </p>
           </div>
@@ -197,8 +256,8 @@ export default function DashboardAnalytics() {
           </div>
           <div>
             <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{kpis.leads}</p>
-            <p className={`text-xs flex items-center gap-1 mt-1 font-medium transition-colors ${kpis.leadsGrowth.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-              <ArrowUpRight className={`w-3 h-3 ${kpis.leadsGrowth.startsWith('-') ? 'rotate-90' : ''}`} />
+            <p className={`text-xs flex items-center gap-1 mt-1 font-medium transition-colors ${loadError ? 'text-red-400' : !dbData ? 'text-amber-400 animate-pulse' : kpis.leadsGrowth.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+              {dbData && <ArrowUpRight className={`w-3 h-3 ${kpis.leadsGrowth.startsWith('-') ? 'rotate-90' : ''}`} />}
               {kpis.leadsGrowth}
             </p>
           </div>
@@ -214,7 +273,7 @@ export default function DashboardAnalytics() {
           </div>
           <div>
             <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{kpis.eventos}</p>
-            <p className="text-xs text-[var(--text-muted)] mt-1 font-medium transition-colors">
+            <p className={`text-xs mt-1 font-medium transition-colors ${loadError ? 'text-red-400' : !dbData ? 'text-amber-400 animate-pulse' : 'text-[var(--text-muted)]'}`}>
               {kpis.eventosDesc}
             </p>
           </div>
@@ -230,7 +289,7 @@ export default function DashboardAnalytics() {
           </div>
           <div>
             <p className="text-3xl font-bold text-[var(--text-primary)] transition-all">{kpis.conversao}</p>
-            <p className="text-xs text-[var(--text-muted)] mt-1 font-medium transition-colors">
+            <p className={`text-xs mt-1 font-medium transition-colors ${loadError ? 'text-red-400' : !dbData ? 'text-amber-400 animate-pulse' : 'text-[var(--text-muted)]'}`}>
               {kpis.conversaoGrowth}
             </p>
           </div>

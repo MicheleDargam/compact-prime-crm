@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import 'dotenv/config';
+import { prisma } from './lib/prisma';
 
-export async function GET() {
+async function main() {
+  console.log("Iniciando query...");
   try {
     const now = new Date();
     const year = now.getFullYear();
@@ -10,8 +11,6 @@ export async function GET() {
     const lastDay = new Date(year, month + 1, 0, 23, 59, 59);
     const prevFirstDay = new Date(year, month - 1, 1);
     const prevLastDay = new Date(year, month, 0, 23, 59, 59);
-
-    // First day of 6 months ago
     const sixMonthsAgo = new Date(year, month - 5, 1);
 
     const [
@@ -45,7 +44,7 @@ export async function GET() {
       prisma.clientes.count({
         where: { created_at: { gte: prevFirstDay, lte: prevLastDay }, deleted_at: null },
       }),
-      prisma.$queryRaw<Array<{ yr: number; mo: number; revenue: number }>>`
+      prisma.$queryRaw`
         SELECT
           EXTRACT(YEAR  FROM data_pagamento)::int AS yr,
           EXTRACT(MONTH FROM data_pagamento)::int AS mo,
@@ -58,39 +57,12 @@ export async function GET() {
       `,
     ]);
 
-    // Build full 6-month array (fill gaps with 0)
-    const historicoReceita = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(year, month - 5 + i, 1);
-      const yr = d.getFullYear();
-      const mo = d.getMonth() + 1;
-      const found = historicoRaw.find((r) => r.yr === yr && r.mo === mo);
-      const label = d.toLocaleDateString("pt-BR", { month: "short" })
-        .replace(".", "")
-        .replace(/^\w/, (c) => c.toUpperCase());
-      return { yr, mo, revenue: found ? found.revenue : 0, label };
-    });
-
-    const eventosPorTipo: Record<string, number> = {};
-    for (const row of eventosPorTipoRaw) {
-      if (row.tipo_evento) eventosPorTipo[row.tipo_evento] = row._count.id;
-    }
-
-    return NextResponse.json({
-      ok: true,
-      data: {
-        receitaMes: Number(receitaResult._sum.valor_recebido ?? 0),
-        leadsNoMes,
-        eventosFechados,
-        eventosTotais,
-        eventosPorTipo,
-        receitaMesAnterior: Number(receitaAnteriorResult._sum.valor_recebido ?? 0),
-        leadsMesAnterior,
-        historicoReceita,
-      },
-    });
+    console.log("Sucesso!", { leadsNoMes, eventosFechados });
   } catch (error) {
-    console.error("[GET /api/dashboard]", error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ ok: false, error: errorMessage }, { status: 500 });
+    console.error("ERRO COMPLETO:", error);
+  } finally {
+    await prisma.$disconnect();
   }
 }
+
+main();
