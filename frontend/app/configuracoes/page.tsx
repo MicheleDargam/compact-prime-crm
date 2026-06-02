@@ -12,11 +12,6 @@ import {
   Lock,
   Check,
   HelpCircle,
-  Smartphone,
-  Calendar,
-  Cpu,
-  Bot,
-  Link2,
   Save,
   CheckCircle,
   FileCheck,
@@ -33,7 +28,7 @@ import {
 } from "lucide-react";
 import { ServiceBadge } from "@/app/components/ServiceBadge";
 
-type TabId = "empresa" | "servicos" | "socias" | "financeiro" | "integracoes" | "visual" | "clientes" | "seguranca";
+type TabId = "empresa" | "servicos" | "socias" | "financeiro" | "visual" | "clientes" | "seguranca";
 
 interface TabItem {
   id: TabId;
@@ -60,6 +55,16 @@ const CATEGORY_BADGE_STYLE: Record<ClientCategoryOption, string> = {
   "Cliente Prime": "text-blue-300 border-blue-500/40 bg-blue-500/10",
   "Cliente VIP": "text-[var(--gold-300)] border-[var(--gold-500)]/40 bg-[var(--gold-500)]/10",
 };
+
+interface SociaForm {
+  id?: string;
+  nome: string;
+  cargo: string;
+  email: string;
+  telefone: string;
+  percentual: number;
+  ordem: number;
+}
 
 const SERVICE_BADGE_STYLE: Record<ServiceOption, string> = {
   "Buffet": "text-[var(--gold-300)] bg-[var(--gold-500)]/10 border-[var(--gold-500)]/20",
@@ -88,29 +93,35 @@ export default function ConfiguacoesPage() {
   const [logoUploading, setLogoUploading] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
+  // Socias States
+  const [socias, setSocias] = useState<SociaForm[]>([
+    { nome: "", cargo: "", email: "", telefone: "", percentual: 34, ordem: 0 },
+    { nome: "", cargo: "", email: "", telefone: "", percentual: 33, ordem: 1 },
+    { nome: "", cargo: "", email: "", telefone: "", percentual: 33, ordem: 2 },
+  ]);
+  const [sociasLoading, setSociasLoading] = useState(false);
+
   // Service Actives States (Toggles)
   const [buffetAtivo, setBuffetAtivo] = useState(true);
   const [decoracaoAtiva, setDecoracaoAtiva] = useState(true);
   const [fotografiaAtiva, setFotografiaAtiva] = useState(true);
+  const [servicosDb, setServicosDb] = useState<{ id: string; tipo: string; ativo: boolean }[]>([]);
 
   // Financial Standard States
   const [validadeProposta, setValidadeProposta] = useState("15 dias");
   const [parcelamentoPadrao, setParcelamentoPadrao] = useState("Sinal + Parcelas iguais mensais até 10 dias antes do evento");
   const [sinalMinimo, setSinalMinimo] = useState("30% de sinal para reserva");
   const [observacoesFinanceiras, setObservacoesFinanceiras] = useState("Valores sujeitos a alteração em caso de aumento expressivo de insumos.");
+  const [financeiroLoading, setFinanceiroLoading] = useState(false);
 
   // Client Categories States
   const [criterioNovo, setCriterioNovo] = useState("Primeiro contato ou primeira contratação com a Compact Prime.");
-
   const [prioridadeNovo, setPrioridadeNovo] = useState<"Normal" | "Alta" | "Máxima">("Normal");
-
   const [criterioPrime, setCriterioPrime] = useState("Cliente que já contratou mais de uma vez com a Compact Prime.");
-
   const [prioridadePrime, setPrioridadePrime] = useState<"Normal" | "Alta" | "Máxima">("Alta");
-
   const [criterioVip, setCriterioVip] = useState("Cliente estratégico, alto ticket ou indicação importante de parceiro.");
-
   const [prioridadeVip, setPrioridadeVip] = useState<"Normal" | "Alta" | "Máxima">("Máxima");
+  const [categoriasDb, setCategoriasDb] = useState<{ id: string; nome: string }[]>([]);
 
   // Security / Change Password States
   const [senhaAtual, setSenhaAtual] = useState("");
@@ -122,19 +133,34 @@ export default function ConfiguacoesPage() {
 
   // Preferences Toggles
   const [temaEscuro, setTemaEscuro] = useState(true);
-  const [identidadeDourada, setIdentidadeDourada] = useState(true);
-  const [layoutPremium, setLayoutPremium] = useState(true);
 
   const tabs: TabItem[] = [
     { id: "empresa", label: "Empresa", icon: <Building2 className="w-4 h-4" /> },
     { id: "servicos", label: "Serviços & Combo", icon: <Briefcase className="w-4 h-4" /> },
     { id: "socias", label: "Sócias & Societário", icon: <Users className="w-4 h-4" /> },
     { id: "financeiro", label: "Financeiro Padrão", icon: <DollarSign className="w-4 h-4" /> },
-    { id: "integracoes", label: "Integrações Futuras", icon: <Link2 className="w-4 h-4" /> },
-    { id: "visual", label: "Visual & Temas", icon: <Eye className="w-4 h-4" /> },
+    { id: "visual", label: "Temas", icon: <Eye className="w-4 h-4" /> },
     { id: "clientes", label: "Clientes & Categorias", icon: <Tag className="w-4 h-4" /> },
     { id: "seguranca", label: "Segurança", icon: <Lock className="w-4 h-4" /> },
   ];
+
+  useEffect(() => {
+    fetch("/api/configuracoes/socias")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.ok || !Array.isArray(json.data) || json.data.length === 0) return;
+        setSocias(json.data.map((s: SociaForm) => ({
+          id: s.id,
+          nome: s.nome ?? "",
+          cargo: s.cargo ?? "",
+          email: s.email ?? "",
+          telefone: s.telefone ?? "",
+          percentual: s.percentual ?? 50,
+          ordem: s.ordem ?? 0,
+        })));
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/configuracoes/empresa")
@@ -153,8 +179,47 @@ export default function ConfiguacoesPage() {
         if (d.cargo_responsavel) setCargoResponsavel(d.cargo_responsavel);
         if (d.assinatura_texto) setAssinaturaTexto(d.assinatura_texto);
         if (d.logo_url) setLogoUrl(d.logo_url);
+        if (d.validade_proposta) setValidadeProposta(d.validade_proposta);
+        if (d.parcelamento_padrao) setParcelamentoPadrao(d.parcelamento_padrao);
+        if (d.sinal_minimo) setSinalMinimo(d.sinal_minimo);
+        if (d.observacoes_financeiras) setObservacoesFinanceiras(d.observacoes_financeiras);
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/configuracoes/servicos")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.ok || !Array.isArray(json.data)) return;
+        setServicosDb(json.data);
+        json.data.forEach((s: { tipo: string; ativo: boolean }) => {
+          const t = s.tipo.toLowerCase();
+          if (t.includes("buffet")) setBuffetAtivo(s.ativo);
+          if (t.includes("decora")) setDecoracaoAtiva(s.ativo);
+          if (t.includes("fotograf")) setFotografiaAtiva(s.ativo);
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/configuracoes/categorias")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.ok || !Array.isArray(json.data)) return;
+        setCategoriasDb(json.data.map((c: { id: string; nome: string }) => ({ id: c.id, nome: c.nome })));
+        json.data.forEach((c: { nome: string; criterio: string; prioridade: "Normal" | "Alta" | "Máxima" }) => {
+          if (c.nome === "Cliente Novo") { if (c.criterio) setCriterioNovo(c.criterio); setPrioridadeNovo(c.prioridade); }
+          if (c.nome === "Cliente Prime") { if (c.criterio) setCriterioPrime(c.criterio); setPrioridadePrime(c.prioridade); }
+          if (c.nome === "Cliente VIP") { if (c.criterio) setCriterioVip(c.criterio); setPrioridadeVip(c.prioridade); }
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setTemaEscuro(localStorage.getItem("crm-theme") !== "light");
   }, []);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,6 +262,10 @@ export default function ConfiguacoesPage() {
           responsavel_legal: responsavelLegal,
           cargo_responsavel: cargoResponsavel,
           assinatura_texto: assinaturaTexto,
+          validade_proposta: validadeProposta,
+          parcelamento_padrao: parcelamentoPadrao,
+          sinal_minimo: sinalMinimo,
+          observacoes_financeiras: observacoesFinanceiras,
         }),
       });
       const json = await res.json();
@@ -205,6 +274,88 @@ export default function ConfiguacoesPage() {
       // silent
     } finally {
       setEmpresaLoading(false);
+    }
+  };
+
+  const handleSaveSocias = async () => {
+    setSociasLoading(true);
+    try {
+      const res = await fetch("/api/configuracoes/socias", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(socias),
+      });
+      const json = await res.json();
+      if (json.ok) handleSave("Sócias");
+    } catch {
+      // silent
+    } finally {
+      setSociasLoading(false);
+    }
+  };
+
+  const handleSaveFinanceiro = async () => {
+    setFinanceiroLoading(true);
+    try {
+      const res = await fetch("/api/configuracoes/empresa", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome_fantasia: nomeFantasia, slogan, telefone, email, endereco,
+          razao_social: razaoSocial, cnpj, responsavel_legal: responsavelLegal,
+          cargo_responsavel: cargoResponsavel, assinatura_texto: assinaturaTexto,
+          validade_proposta: validadeProposta, parcelamento_padrao: parcelamentoPadrao,
+          sinal_minimo: sinalMinimo, observacoes_financeiras: observacoesFinanceiras,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) handleSave("Financeiro Padrão");
+    } catch { /* silent */ } finally {
+      setFinanceiroLoading(false);
+    }
+  };
+
+  const handleSaveCategorias = async () => {
+    if (categoriasDb.length === 0) return;
+    const payload = categoriasDb.map((c) => ({
+      id: c.id,
+      criterio: c.nome === "Cliente Novo" ? criterioNovo : c.nome === "Cliente Prime" ? criterioPrime : criterioVip,
+      prioridade: c.nome === "Cliente Novo" ? prioridadeNovo : c.nome === "Cliente Prime" ? prioridadePrime : prioridadeVip,
+    }));
+    try {
+      const res = await fetch("/api/configuracoes/categorias", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (json.ok) handleSave("Clientes & Categorias");
+    } catch { /* silent */ }
+  };
+
+  const handleToggleServico = async (tipo: string, newValue: boolean) => {
+    const servico = servicosDb.find((s) => s.tipo.toLowerCase().includes(tipo));
+    if (!servico) return;
+    try {
+      const res = await fetch("/api/configuracoes/servicos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: servico.id, ativo: newValue }),
+      });
+      const json = await res.json();
+      if (!json.ok) { alert(json.error ?? "Erro ao atualizar serviço."); return; }
+      setServicosDb((prev) => prev.map((s) => s.id === servico.id ? { ...s, ativo: newValue } : s));
+    } catch { alert("Erro de conexão."); }
+  };
+
+  const handleToggleTema = (escuro: boolean) => {
+    setTemaEscuro(escuro);
+    if (escuro) {
+      document.documentElement.removeAttribute("data-theme");
+      localStorage.setItem("crm-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light");
+      localStorage.setItem("crm-theme", "light");
     }
   };
 
@@ -307,23 +458,85 @@ export default function ConfiguacoesPage() {
     setShowRuleForm(true);
   };
 
-  const handleSaveRule = () => {
-    if (!ruleFormName.trim() || ruleFormServices.length === 0) return;
-    if (editingRuleId) {
-      setPromotionRules(prev => prev.map(r =>
-        r.id === editingRuleId
-          ? { ...r, name: ruleFormName, clientCategory: ruleFormCategory, services: ruleFormServices, discount: ruleFormDiscount, active: ruleFormActive, observations: ruleFormObservations }
-          : r
-      ));
-    } else {
-      setPromotionRules(prev => [...prev, { id: `rule-${Date.now()}`, name: ruleFormName, clientCategory: ruleFormCategory, services: ruleFormServices, discount: ruleFormDiscount, active: ruleFormActive, observations: ruleFormObservations }]);
+  const handleSaveRule = async () => {
+    if (!ruleFormName.trim()) return;
+    try {
+      if (editingRuleId) {
+        const res = await fetch(`/api/configuracoes/regras/${editingRuleId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: ruleFormName,
+            discount: ruleFormDiscount,
+            observations: ruleFormObservations,
+            active: ruleFormActive,
+          }),
+        });
+        const json = await res.json();
+        if (!json.ok) { alert(json.error ?? "Erro ao atualizar regra."); return; }
+        setPromotionRules(prev => prev.map(r =>
+          r.id === editingRuleId
+            ? { ...r, name: ruleFormName, clientCategory: ruleFormCategory, services: ruleFormServices, discount: ruleFormDiscount, active: ruleFormActive, observations: ruleFormObservations }
+            : r
+        ));
+      } else {
+        const res = await fetch("/api/configuracoes/regras", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: ruleFormName,
+            clientCategory: ruleFormCategory,
+            discount: ruleFormDiscount,
+            observations: ruleFormObservations,
+          }),
+        });
+        const json = await res.json();
+        if (!json.ok) { alert(json.error ?? "Erro ao criar regra."); return; }
+        setPromotionRules(prev => [...prev, {
+          id: json.data.id,
+          name: ruleFormName,
+          clientCategory: ruleFormCategory,
+          services: ruleFormServices,
+          discount: ruleFormDiscount,
+          active: true,
+          observations: ruleFormObservations,
+        }]);
+      }
+      cancelRuleForm();
+      handleSave("Regras Comerciais");
+    } catch {
+      alert("Erro de conexão. Tente novamente.");
     }
-    cancelRuleForm();
-    handleSave("Regras Comerciais");
   };
 
-  const toggleRuleActive = (id: string) => setPromotionRules(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r));
-  const deleteRule = (id: string) => setPromotionRules(prev => prev.filter(r => r.id !== id));
+  const toggleRuleActive = async (id: string) => {
+    const rule = promotionRules.find(r => r.id === id);
+    if (!rule) return;
+    const newActive = !rule.active;
+    try {
+      const res = await fetch(`/api/configuracoes/regras/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: newActive }),
+      });
+      const json = await res.json();
+      if (!json.ok) { alert(json.error ?? "Erro ao atualizar regra."); return; }
+      setPromotionRules(prev => prev.map(r => r.id === id ? { ...r, active: newActive } : r));
+    } catch {
+      alert("Erro de conexão.");
+    }
+  };
+
+  const deleteRule = async (id: string) => {
+    try {
+      const res = await fetch(`/api/configuracoes/regras/${id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!json.ok) { alert(json.error ?? "Erro ao excluir regra."); return; }
+      setPromotionRules(prev => prev.filter(r => r.id !== id));
+    } catch {
+      alert("Erro de conexão.");
+    }
+  };
   const toggleRuleService = (svc: ServiceOption) => setRuleFormServices(prev => prev.includes(svc) ? prev.filter(s => s !== svc) : [...prev, svc]);
   const getActiveRulesForCategory = (cat: ClientCategoryOption) => promotionRules.filter(r => r.clientCategory === cat && r.active);
 
@@ -562,7 +775,7 @@ export default function ConfiguacoesPage() {
                       
                       {/* Premium Toggle */}
                       <button 
-                        onClick={() => setBuffetAtivo(!buffetAtivo)}
+                        onClick={() => { setBuffetAtivo(!buffetAtivo); handleToggleServico("buffet", !buffetAtivo); }}
                         className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${buffetAtivo ? 'bg-emerald-500' : 'bg-neutral-700'}`}
                       >
                         <div className={`bg-white w-4 h-4 rounded-full transition-transform ${buffetAtivo ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -586,7 +799,7 @@ export default function ConfiguacoesPage() {
                       
                       {/* Premium Toggle */}
                       <button 
-                        onClick={() => setDecoracaoAtiva(!decoracaoAtiva)}
+                        onClick={() => { setDecoracaoAtiva(!decoracaoAtiva); handleToggleServico("decora", !decoracaoAtiva); }}
                         className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${decoracaoAtiva ? 'bg-emerald-500' : 'bg-neutral-700'}`}
                       >
                         <div className={`bg-white w-4 h-4 rounded-full transition-transform ${decoracaoAtiva ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -610,7 +823,7 @@ export default function ConfiguacoesPage() {
                       
                       {/* Premium Toggle */}
                       <button 
-                        onClick={() => setFotografiaAtiva(!fotografiaAtiva)}
+                        onClick={() => { setFotografiaAtiva(!fotografiaAtiva); handleToggleServico("fotograf", !fotografiaAtiva); }}
                         className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${fotografiaAtiva ? 'bg-emerald-500' : 'bg-neutral-700'}`}
                       >
                         <div className={`bg-white w-4 h-4 rounded-full transition-transform ${fotografiaAtiva ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -921,64 +1134,66 @@ export default function ConfiguacoesPage() {
                 <p className="text-xs text-[var(--text-muted)] mt-0.5">Gerenciamento de acesso e participações societárias das sócias proprietárias.</p>
               </div>
 
-              {/* Partners Cards list */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* Michele Card */}
-                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] relative overflow-hidden group">
-                  <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-[var(--gold-500)] to-transparent" />
-                  
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="text-sm font-bold text-[var(--text-primary)]">Michele Dargam</h4>
-                      <p className="text-[10px] text-[var(--gold-300)] uppercase font-bold tracking-wider mt-0.5">Diretora Comercial & Eventos</p>
+                {socias.map((socia, i) => (
+                  <div key={i} className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] relative overflow-hidden flex flex-col gap-3">
+                    <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-[var(--gold-500)] to-transparent" />
+
+                    <div className="flex items-center justify-between gap-3">
+                      <input
+                        type="text"
+                        placeholder="Nome da sócia"
+                        value={socia.nome}
+                        onChange={(e) => setSocias(prev => prev.map((s, idx) => idx === i ? { ...s, nome: e.target.value } : s))}
+                        className="flex-1 bg-transparent border-b border-[var(--border-default)] focus:border-[var(--gold-400)] text-sm font-bold text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none py-0.5 transition-colors"
+                      />
+                      <div className="flex items-center gap-1 shrink-0">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={socia.percentual}
+                          onChange={(e) => setSocias(prev => prev.map((s, idx) => idx === i ? { ...s, percentual: Number(e.target.value) } : s))}
+                          className="w-12 text-center bg-[var(--bg-input)] border border-[var(--border-default)] focus:border-[var(--gold-400)] rounded text-xs font-bold font-mono text-[var(--text-primary)] focus:outline-none py-0.5"
+                        />
+                        <span className="text-xs text-[var(--text-muted)] font-mono">%</span>
+                      </div>
                     </div>
-                    <span className="text-xs font-bold font-mono px-2 py-0.5 rounded bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]">
-                      50%
-                    </span>
-                  </div>
 
-                  <div className="mt-4 space-y-1.5 text-xs text-[var(--text-secondary)] font-mono">
-                    <p className="flex items-center gap-2">
-                      <span className="text-neutral-500 w-12 text-[10px] font-sans uppercase font-bold tracking-wider">E-mail:</span>
-                      <span>michele@compactprime.com.br</span>
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <span className="text-neutral-500 w-12 text-[10px] font-sans uppercase font-bold tracking-wider">Telefone:</span>
-                      <span>(11) 99999-1111</span>
-                    </p>
-                  </div>
-                </div>
+                    <input
+                      type="text"
+                      placeholder="Cargo (ex: Diretora Comercial)"
+                      value={socia.cargo}
+                      onChange={(e) => setSocias(prev => prev.map((s, idx) => idx === i ? { ...s, cargo: e.target.value } : s))}
+                      className="w-full bg-transparent border-b border-[var(--border-default)] focus:border-[var(--gold-400)] text-[10px] font-bold text-[var(--gold-300)] uppercase tracking-wider placeholder-[var(--text-muted)] focus:outline-none py-0.5 transition-colors"
+                    />
 
-                {/* Fernanda Card */}
-                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] relative overflow-hidden group">
-                  <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-[var(--gold-500)] to-transparent" />
-                  
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="text-sm font-bold text-[var(--text-primary)]">Fernanda Prime</h4>
-                      <p className="text-[10px] text-[var(--gold-300)] uppercase font-bold tracking-wider mt-0.5">Diretora Operacional & Gastronomia</p>
+                    <div className="space-y-2 mt-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-neutral-500 w-14 text-[10px] font-sans uppercase font-bold tracking-wider shrink-0">E-mail:</span>
+                        <input
+                          type="email"
+                          placeholder="email@empresa.com.br"
+                          value={socia.email}
+                          onChange={(e) => setSocias(prev => prev.map((s, idx) => idx === i ? { ...s, email: e.target.value } : s))}
+                          className="flex-1 bg-transparent text-xs font-mono text-[var(--text-secondary)] placeholder-[var(--text-muted)] border-b border-transparent focus:border-[var(--gold-400)] focus:outline-none py-0.5 transition-colors"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-neutral-500 w-14 text-[10px] font-sans uppercase font-bold tracking-wider shrink-0">Telefone:</span>
+                        <input
+                          type="text"
+                          placeholder="(00) 00000-0000"
+                          value={socia.telefone}
+                          onChange={(e) => setSocias(prev => prev.map((s, idx) => idx === i ? { ...s, telefone: e.target.value } : s))}
+                          className="flex-1 bg-transparent text-xs font-mono text-[var(--text-secondary)] placeholder-[var(--text-muted)] border-b border-transparent focus:border-[var(--gold-400)] focus:outline-none py-0.5 transition-colors"
+                        />
+                      </div>
                     </div>
-                    <span className="text-xs font-bold font-mono px-2 py-0.5 rounded bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)]">
-                      50%
-                    </span>
                   </div>
-
-                  <div className="mt-4 space-y-1.5 text-xs text-[var(--text-secondary)] font-mono">
-                    <p className="flex items-center gap-2">
-                      <span className="text-neutral-500 w-12 text-[10px] font-sans uppercase font-bold tracking-wider">E-mail:</span>
-                      <span>fernanda@compactprime.com.br</span>
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <span className="text-neutral-500 w-12 text-[10px] font-sans uppercase font-bold tracking-wider">Telefone:</span>
-                      <span>(11) 99999-2222</span>
-                    </p>
-                  </div>
-                </div>
-
+                ))}
               </div>
 
-              {/* Additional security tip box */}
               <div className="p-4 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-xs text-[var(--text-secondary)] flex items-start gap-2">
                 <Lock className="w-4 h-4 text-[var(--gold-400)] shrink-0 mt-0.5" />
                 <div>
@@ -989,14 +1204,14 @@ export default function ConfiguacoesPage() {
                 </div>
               </div>
 
-              {/* Save button */}
               <div className="mt-auto pt-6 border-t border-[var(--border-subtle)] flex justify-end">
-                <button 
-                  onClick={() => handleSave("Sócias")}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+                <button
+                  onClick={handleSaveSocias}
+                  disabled={sociasLoading}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-60"
                 >
                   <Save className="w-4 h-4 text-black stroke-[3]" />
-                  Salvar Configurações
+                  {sociasLoading ? "Salvando..." : "Salvar Configurações"}
                 </button>
               </div>
             </div>
@@ -1060,137 +1275,8 @@ export default function ConfiguacoesPage() {
               {/* Save button */}
               <div className="mt-auto pt-6 border-t border-[var(--border-subtle)] flex justify-end">
                 <button 
-                  onClick={() => handleSave("Financeiro Padrão")}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
-                >
-                  <Save className="w-4 h-4 text-black stroke-[3]" />
-                  Salvar Configurações
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: INTEGRAÇÕES */}
-          {activeTab === "integracoes" && (
-            <div className="flex flex-col gap-6 flex-1">
-              <div>
-                <h3 className="text-base font-bold text-[var(--text-primary)]">Integrações de Tecnologia</h3>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Gerenciamento de conexões externas com APIs de WhatsApp, agendas e Inteligência Artificial.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* WhatsApp */}
-                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] flex flex-col justify-between min-h-[140px] group hover:border-[var(--gold-500)]/20 transition-all">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
-                        <Smartphone className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">WhatsApp Link</h4>
-                        <p className="text-[9px] text-[var(--text-muted)] mt-0.5">Disparo manual de propostas</p>
-                      </div>
-                    </div>
-                    <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded px-2 py-0.5 uppercase font-bold font-mono">
-                      Conectado
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-[var(--text-secondary)] mt-4 leading-relaxed">
-                    Disparo de link direto para o chat do cliente via aplicativo web ou desktop.
-                  </p>
-                </div>
-
-                {/* Google Agenda */}
-                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] flex flex-col justify-between min-h-[140px] group hover:border-[var(--gold-500)]/20 transition-all">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-400">
-                        <Calendar className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Google Agenda</h4>
-                        <p className="text-[9px] text-[var(--text-muted)] mt-0.5">Sincronização bidirecional</p>
-                      </div>
-                    </div>
-                    <span className="text-[8px] bg-yellow-500/10 text-yellow-400 border border-yellow-500/25 rounded px-2 py-0.5 uppercase font-bold font-mono">
-                      Em breve
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-[var(--text-secondary)] mt-4 leading-relaxed">
-                    Sincronização em tempo real das visitas técnicas e casamentos no calendário.
-                  </p>
-                </div>
-
-                {/* Evolution API */}
-                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] flex flex-col justify-between min-h-[140px] group hover:border-[var(--gold-500)]/20 transition-all">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
-                        <Cpu className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Evolution API</h4>
-                        <p className="text-[9px] text-[var(--text-muted)] mt-0.5">Gatilhos automáticos WhatsApp</p>
-                      </div>
-                    </div>
-                    <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded px-2 py-0.5 uppercase font-bold font-mono">
-                      Conectado
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-[var(--text-secondary)] mt-4 leading-relaxed">
-                    API comercial ativa para recepção de webhooks de novos leads e propostas de orçamento.
-                  </p>
-                </div>
-
-                {/* IA Comercial */}
-                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] flex flex-col justify-between min-h-[140px] group hover:border-[var(--gold-500)]/20 transition-all">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 bg-neutral-500/10 rounded-lg text-neutral-400">
-                        <Bot className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">IA Comercial</h4>
-                        <p className="text-[9px] text-[var(--text-muted)] mt-0.5">Triagem automática de Leads</p>
-                      </div>
-                    </div>
-                    <span className="text-[8px] bg-neutral-800 text-neutral-400 border border-neutral-700 rounded px-2 py-0.5 uppercase font-bold font-mono">
-                      Planejado
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-[var(--text-secondary)] mt-4 leading-relaxed">
-                    Qualificação inteligente com robôs de conversa para WhatsApp para captação automática.
-                  </p>
-                </div>
-
-                {/* IA Operacional */}
-                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] flex flex-col justify-between min-h-[140px] md:col-span-2 group hover:border-[var(--gold-500)]/20 transition-all">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 bg-neutral-500/10 rounded-lg text-neutral-400">
-                        <Bot className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">IA Operacional de Escala</h4>
-                        <p className="text-[9px] text-[var(--text-muted)] mt-0.5">Dimensionamento automático de colaboradores</p>
-                      </div>
-                    </div>
-                    <span className="text-[8px] bg-neutral-800 text-neutral-400 border border-neutral-700 rounded px-2 py-0.5 uppercase font-bold font-mono">
-                      Planejado
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-[var(--text-secondary)] mt-4 leading-relaxed">
-                    Algoritmo inteligente para cruzamento de disponibilidade de equipes operacionais e tamanho do buffet contratado na semana.
-                  </p>
-                </div>
-
-              </div>
-
-              {/* Save button */}
-              <div className="mt-auto pt-6 border-t border-[var(--border-subtle)] flex justify-end">
-                <button 
-                  onClick={() => handleSave("Integrações")}
+                  onClick={handleSaveFinanceiro}
+                  disabled={financeiroLoading}
                   className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                 >
                   <Save className="w-4 h-4 text-black stroke-[3]" />
@@ -1215,10 +1301,9 @@ export default function ConfiguacoesPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                   {/* Card: Tema Escuro Premium */}
-                  <div className="relative rounded-xl border-2 border-[var(--gold-500)]/50 bg-[var(--bg-secondary)] overflow-hidden shadow-[0_0_16px_rgba(212,169,55,0.08)]">
-                    {/* Selected indicator */}
-                    <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center z-10">
-                      <Check className="w-3 h-3 text-white stroke-[3]" />
+                  <div onClick={() => handleToggleTema(true)} className={`relative rounded-xl border-2 bg-[var(--bg-secondary)] overflow-hidden cursor-pointer transition-all ${temaEscuro ? "border-[var(--gold-500)]/50 shadow-[0_0_16px_rgba(212,169,55,0.08)]" : "border-[var(--border-default)] opacity-70 hover:opacity-90"}`}>
+                    <div className={`absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center z-10 ${temaEscuro ? "bg-emerald-500" : "bg-[var(--bg-input)] border border-[var(--border-default)]"}`}>
+                      {temaEscuro && <Check className="w-3 h-3 text-white stroke-[3]" />}
                     </div>
 
                     {/* Preview área: mini mock escuro */}
@@ -1249,7 +1334,7 @@ export default function ConfiguacoesPage() {
                       <div className="flex items-center gap-2">
                         <Moon className="w-4 h-4 text-[var(--gold-400)]" />
                         <span className="text-sm font-bold text-[var(--text-primary)]">Tema Escuro Premium</span>
-                        <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 uppercase tracking-wide">Ativo</span>
+                        {temaEscuro && <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 uppercase tracking-wide">Ativo</span>}
                       </div>
                       <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
                         Identidade principal do CRM Compact Prime
@@ -1258,10 +1343,9 @@ export default function ConfiguacoesPage() {
                   </div>
 
                   {/* Card: Tema Claro Corporativo */}
-                  <div className="relative rounded-xl border-2 border-[var(--border-default)] bg-[var(--bg-secondary)] overflow-hidden opacity-80">
-                    {/* Lock indicator */}
-                    <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[var(--bg-input)] border border-[var(--border-default)] flex items-center justify-center z-10">
-                      <Lock className="w-2.5 h-2.5 text-[var(--text-muted)]" />
+                  <div onClick={() => handleToggleTema(false)} className={`relative rounded-xl border-2 bg-[var(--bg-secondary)] overflow-hidden cursor-pointer transition-all ${!temaEscuro ? "border-[var(--gold-500)]/50 shadow-[0_0_16px_rgba(212,169,55,0.08)]" : "border-[var(--border-default)] opacity-70 hover:opacity-90"}`}>
+                    <div className={`absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center z-10 ${!temaEscuro ? "bg-emerald-500" : "bg-[var(--bg-input)] border border-[var(--border-default)]"}`}>
+                      {!temaEscuro && <Check className="w-3 h-3 text-white stroke-[3]" />}
                     </div>
 
                     {/* Preview área: mini mock claro */}
@@ -1292,63 +1376,12 @@ export default function ConfiguacoesPage() {
                       <div className="flex items-center gap-2">
                         <Sun className="w-4 h-4 text-amber-400" />
                         <span className="text-sm font-bold text-[var(--text-primary)]">Tema Claro Corporativo</span>
-                        <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25 uppercase tracking-wide">Em breve</span>
+                        {!temaEscuro && <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 uppercase tracking-wide">Ativo</span>}
                       </div>
                       <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
                         Versão clara para ambientes iluminados e uso prolongado
                       </p>
                     </div>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* ── Aparência ── */}
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold text-[var(--gold-300)] uppercase tracking-wider">Aparência do CRM</h4>
-
-                <div className="space-y-3.5 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] p-5 rounded-xl">
-                  
-                  {/* Tema Escuro Toggle */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-[var(--text-primary)]">Tema Escuro Ativo</p>
-                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Paleta focada em tons pretos e cinza grafite para redução de fadiga visual.</p>
-                    </div>
-                    <button 
-                      onClick={() => setTemaEscuro(!temaEscuro)}
-                      className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${temaEscuro ? 'bg-emerald-500' : 'bg-neutral-700'}`}
-                    >
-                      <div className={`bg-white w-4 h-4 rounded-full transition-transform ${temaEscuro ? 'translate-x-4' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-
-                  {/* Identidade Dourada Toggle */}
-                  <div className="flex items-center justify-between border-t border-[var(--border-subtle)]/40 pt-3.5">
-                    <div>
-                      <p className="text-xs font-bold text-[var(--text-primary)]">Identidade Dourada Ativa</p>
-                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Destaques e links marcados em ouro premium da marca Compact Prime.</p>
-                    </div>
-                    <button 
-                      onClick={() => setIdentidadeDourada(!identidadeDourada)}
-                      className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${identidadeDourada ? 'bg-emerald-500' : 'bg-neutral-700'}`}
-                    >
-                      <div className={`bg-white w-4 h-4 rounded-full transition-transform ${identidadeDourada ? 'translate-x-4' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-
-                  {/* Layout Premium Toggle */}
-                  <div className="flex items-center justify-between border-t border-[var(--border-subtle)]/40 pt-3.5">
-                    <div>
-                      <p className="text-xs font-bold text-[var(--text-primary)]">Layout Premium Habilitado</p>
-                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Sombras aveludadas, gradientes lineares suaves e micro-animações ativas.</p>
-                    </div>
-                    <button 
-                      onClick={() => setLayoutPremium(!layoutPremium)}
-                      className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${layoutPremium ? 'bg-emerald-500' : 'bg-neutral-700'}`}
-                    >
-                      <div className={`bg-white w-4 h-4 rounded-full transition-transform ${layoutPremium ? 'translate-x-4' : 'translate-x-0'}`} />
-                    </button>
                   </div>
 
                 </div>
@@ -1381,20 +1414,6 @@ export default function ConfiguacoesPage() {
               <div>
                 <h3 className="text-base font-bold text-[var(--text-primary)]">Categorias de Clientes</h3>
                 <p className="text-xs text-[var(--text-muted)] mt-0.5">Configure os critérios, benefícios e prioridades de cada perfil de cliente no CRM.</p>
-              </div>
-
-              {/* Future integration banner */}
-              <div className="p-3.5 rounded-xl flex items-start gap-3 border border-dashed border-[var(--gold-500)]/25 bg-[var(--gold-500)]/5">
-                <Sparkles className="w-4 h-4 text-[var(--gold-400)] shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-[var(--gold-300)]">Preparado para integração futura</p>
-                  <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-relaxed">
-                    Essas categorias serão aplicadas automaticamente em: <span className="text-[var(--text-secondary)] font-semibold">Clientes</span>, <span className="text-[var(--text-secondary)] font-semibold">Painel de Clientes</span>, <span className="text-[var(--text-secondary)] font-semibold">Propostas</span> e <span className="text-[var(--text-secondary)] font-semibold">IA Comercial</span>.
-                  </p>
-                </div>
-                <span className="shrink-0 text-[8px] font-bold px-2 py-0.5 rounded-full border border-[var(--gold-500)]/30 text-[var(--gold-300)] bg-[var(--gold-500)]/10 uppercase tracking-wide font-mono whitespace-nowrap">
-                  Mock Visual
-                </span>
               </div>
 
               {/* Category Cards */}
@@ -1629,7 +1648,7 @@ export default function ConfiguacoesPage() {
               {/* Save button */}
               <div className="mt-auto pt-6 border-t border-[var(--border-subtle)] flex justify-end">
                 <button
-                  onClick={() => handleSave("Clientes & Categorias")}
+                  onClick={handleSaveCategorias}
                   className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                 >
                   <Save className="w-4 h-4 text-black stroke-[3]" />

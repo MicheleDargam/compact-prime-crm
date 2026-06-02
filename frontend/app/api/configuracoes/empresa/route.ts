@@ -17,6 +17,10 @@ export async function GET() {
         cargo_responsavel: string | null;
         assinatura_texto: string | null;
         slogan: string | null;
+        validade_proposta: string | null;
+        parcelamento_padrao: string | null;
+        sinal_minimo: string | null;
+        observacoes_financeiras: string | null;
       }>
     >`SELECT * FROM configuracoes_empresa WHERE id = 'singleton' LIMIT 1`;
 
@@ -40,28 +44,40 @@ export async function PUT(request: NextRequest) {
       cargo_responsavel = null,
       assinatura_texto = null,
       slogan = null,
+      validade_proposta = null,
+      parcelamento_padrao = null,
+      sinal_minimo = null,
+      observacoes_financeiras = null,
     } = await request.json();
 
     await prisma.$executeRaw`
       INSERT INTO configuracoes_empresa
         (id, nome_fantasia, razao_social, cnpj, endereco, telefone, email,
-         responsavel_legal, cargo_responsavel, assinatura_texto, slogan, updated_at)
+         responsavel_legal, cargo_responsavel, assinatura_texto, slogan,
+         validade_proposta, parcelamento_padrao, sinal_minimo, observacoes_financeiras,
+         updated_at)
       VALUES
         ('singleton', ${nome_fantasia}, ${razao_social}, ${cnpj}, ${endereco},
          ${telefone}, ${email}, ${responsavel_legal}, ${cargo_responsavel},
-         ${assinatura_texto}, ${slogan}, NOW())
+         ${assinatura_texto}, ${slogan},
+         ${validade_proposta}, ${parcelamento_padrao}, ${sinal_minimo}, ${observacoes_financeiras},
+         NOW())
       ON CONFLICT (id) DO UPDATE SET
-        nome_fantasia     = EXCLUDED.nome_fantasia,
-        razao_social      = EXCLUDED.razao_social,
-        cnpj              = EXCLUDED.cnpj,
-        endereco          = EXCLUDED.endereco,
-        telefone          = EXCLUDED.telefone,
-        email             = EXCLUDED.email,
-        responsavel_legal = EXCLUDED.responsavel_legal,
-        cargo_responsavel = EXCLUDED.cargo_responsavel,
-        assinatura_texto  = EXCLUDED.assinatura_texto,
-        slogan            = EXCLUDED.slogan,
-        updated_at        = NOW()
+        nome_fantasia           = EXCLUDED.nome_fantasia,
+        razao_social            = EXCLUDED.razao_social,
+        cnpj                    = EXCLUDED.cnpj,
+        endereco                = EXCLUDED.endereco,
+        telefone                = EXCLUDED.telefone,
+        email                   = EXCLUDED.email,
+        responsavel_legal       = EXCLUDED.responsavel_legal,
+        cargo_responsavel       = EXCLUDED.cargo_responsavel,
+        assinatura_texto        = EXCLUDED.assinatura_texto,
+        slogan                  = EXCLUDED.slogan,
+        validade_proposta       = EXCLUDED.validade_proposta,
+        parcelamento_padrao     = EXCLUDED.parcelamento_padrao,
+        sinal_minimo            = EXCLUDED.sinal_minimo,
+        observacoes_financeiras = EXCLUDED.observacoes_financeiras,
+        updated_at              = NOW()
     `;
 
     return NextResponse.json({ ok: true });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -51,8 +51,16 @@ function Icon({ name, className = "w-5 h-5" }: { name: string; className?: strin
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState("admin@compactprime.com");
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((json) => { if (json.ok && json.email) setUserEmail(json.email); })
+      .catch(() => {});
+  }, []);
 
   async function handleLogout() {
     await fetch("/api/logout", { method: "POST" });
@@ -131,7 +139,7 @@ export default function Sidebar() {
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0" style={{ background: "var(--gold-500)", color: "#000" }}>CP</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>Admin</p>
-                <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>admin@compactprime.com</p>
+                <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{userEmail}</p>
               </div>
               <button
                 onClick={handleLogout}

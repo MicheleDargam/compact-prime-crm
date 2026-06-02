@@ -42,10 +42,7 @@ export async function DELETE(
 ) {
   const { regraId } = await params;
   try {
-    await prisma.regras_comerciais.update({
-      where: { id: regraId },
-      data: { status: "inativa", updated_at: new Date() },
-    });
+    await prisma.regras_comerciais.delete({ where: { id: regraId } });
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {
