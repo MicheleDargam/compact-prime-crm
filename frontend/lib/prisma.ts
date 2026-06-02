@@ -15,10 +15,10 @@ function createPrismaClient(): PrismaClient {
 
   const pool = new Pool({
     connectionString: connectionString!,
-    max: 5,                // Máximo de conexões simultâneas
-    idleTimeoutMillis: 30_000,   // Fecha conexão ociosa após 30s
-    connectionTimeoutMillis: 15_000, // Timeout de conexão: 15s (cobre cold start do Supabase)
-    ssl: { rejectUnauthorized: false }, // Supabase requer SSL
+    max: 5,
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 25_000,
+    ssl: { rejectUnauthorized: false },
   });
 
   const adapter = new PrismaPg(pool);

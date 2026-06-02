@@ -404,10 +404,49 @@ model configuracoes_empresa {
   email             String?  @db.VarChar(254)
   responsavel_legal String?  @db.VarChar(200)
   cargo_responsavel String?  @db.VarChar(100)
-  assinatura_texto  String?  @db.VarChar(200)
-  slogan            String?
-  updated_at        DateTime @default(now()) @db.Timestamptz(6)
-  logo_url          String?  @db.VarChar(500)
+  assinatura_texto        String?  @db.VarChar(200)
+  slogan                  String?
+  updated_at              DateTime @default(now()) @db.Timestamptz(6)
+  logo_url                String?  @db.VarChar(500)
+  validade_proposta       String?  @db.VarChar(100)
+  parcelamento_padrao     String?
+  sinal_minimo            String?  @db.VarChar(200)
+  observacoes_financeiras String?
+}
+
+model reserva_buffet {
+  id                 String   @id @default("singleton")
+  objetivo           String?
+  meta               Decimal  @default(50000) @db.Decimal(12, 2)
+  acumulado          Decimal  @default(0) @db.Decimal(12, 2)
+  percentual_reserva Int      @default(20) @db.SmallInt
+  updated_at         DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model socias {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome             String             @db.VarChar(200)
+  cargo            String             @db.VarChar(100)
+  email            String?            @db.VarChar(254)
+  telefone         String?            @db.VarChar(30)
+  percentual       Int                @default(50) @db.SmallInt
+  ordem            Int                @default(0) @db.SmallInt
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  retiradas_socias retiradas_socias[]
+}
+
+model retiradas_socias {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  socia_id       String   @db.Uuid
+  mes_ano        String   @db.VarChar(7)
+  valor_retirado Decimal  @default(0) @db.Decimal(12, 2)
+  status         String   @default("pendente") @db.VarChar(20)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+  socias         socias   @relation(fields: [socia_id], references: [id], onDelete: Cascade)
+
+  @@unique([socia_id, mes_ano])
 }
 
 model servicos {

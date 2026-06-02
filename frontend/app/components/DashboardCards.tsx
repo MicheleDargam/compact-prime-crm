@@ -37,12 +37,25 @@ const CARD_DEFS = [
 
 export default function DashboardCards() {
   const [kpis, setKpis] = useState<Kpis | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/painel-clientes/kpis")
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20_000);
+
+    fetch("/api/painel-clientes/kpis", { signal: controller.signal })
       .then((r) => r.json())
-      .then((json) => { if (json.ok) setKpis(json.data); })
-      .catch(() => {});
+      .then((json) => {
+        clearTimeout(timeout);
+        if (json.ok) setKpis(json.data);
+        else setLoadError(true);
+      })
+      .catch(() => {
+        clearTimeout(timeout);
+        setLoadError(true);
+      });
+
+    return () => { controller.abort(); clearTimeout(timeout); };
   }, []);
 
   return (
@@ -84,8 +97,8 @@ export default function DashboardCards() {
                 <p className="text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
                   {kpis ? total : "—"}
                 </p>
-                <p className="text-xs font-medium mt-1.5 text-[var(--text-muted)]">
-                  {kpis ? `+${esteMes} este mês` : "carregando..."}
+                <p className={`text-xs font-medium mt-1.5 ${loadError ? "text-red-400" : "text-[var(--text-muted)]"}`}>
+                  {kpis ? `+${esteMes} este mês` : loadError ? "Erro ao carregar" : "carregando..."}
                 </p>
               </div>
               <div
