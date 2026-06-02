@@ -232,8 +232,12 @@ export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: 
   const findColumnByLeadId = (id: string) => data.columns.find((col) => col.leadIds.includes(id));
 
   const handleMenuClick = (pos: MenuClickPos, leadId: string) => {
-    const x = Math.max(4, Math.min(pos.x - 208, (typeof window !== "undefined" ? window.innerWidth : 800) - 212));
-    setActiveMenu({ leadId, x, y: pos.y });
+    const DROPDOWN_H = 340;
+    const winW = typeof window !== "undefined" ? window.innerWidth : 800;
+    const winH = typeof window !== "undefined" ? window.innerHeight : 600;
+    const x = Math.max(4, Math.min(pos.x - 208, winW - 212));
+    const y = pos.y + DROPDOWN_H > winH ? Math.max(4, pos.y - DROPDOWN_H) : pos.y;
+    setActiveMenu({ leadId, x, y });
   };
 
   const handleStatusChange = (leadId: string, newColumnId: string) => {
@@ -506,8 +510,8 @@ export default function PipelineKanban({ searchTerm = "", refreshTrigger = 0 }: 
       {/* Action dropdown (fixed position) */}
       {activeMenu && activeMenuLead && (
         <div
-          className="fixed z-50 w-52 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl shadow-2xl overflow-hidden animate-fade-in-up"
-          style={{ top: activeMenu.y, left: activeMenu.x }}
+          className="fixed z-50 w-52 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl shadow-2xl overflow-y-auto animate-fade-in-up"
+          style={{ top: activeMenu.y, left: activeMenu.x, maxHeight: "calc(100vh - 16px)" }}
         >
           <div className="py-1">
             <DropdownItem icon={<Eye className="w-4 h-4" />} label="Ver cliente" onClick={() => { setShowViewModal(activeMenuLead); setActiveMenu(null); }} />
