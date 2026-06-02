@@ -45,6 +45,7 @@ interface DbData {
   eventosPorTipo: Record<string, number>;
   receitaMesAnterior: number;
   leadsMesAnterior: number;
+  historicoReceita: Array<{ yr: number; mo: number; revenue: number; label: string }>;
 }
 
 function formatBRL(cents: number): string {
@@ -59,7 +60,6 @@ function growthStr(current: number, previous: number, mesAnterior: string): stri
 }
 
 const filterOptions: FilterType[] = ["Todos", "Buffet", "Decoração", "Fotografia"];
-const monthsLabels = ["Dez", "Jan", "Fev", "Mar", "Abr", "Mai"];
 
 export default function DashboardAnalytics() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("Todos");
@@ -108,7 +108,12 @@ export default function DashboardAnalytics() {
         }))
     : [];
 
-  const maxVal = 10;
+  const historicoReceita = dbData?.historicoReceita ?? Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(); d.setMonth(d.getMonth() - 5 + i);
+    return { yr: d.getFullYear(), mo: d.getMonth() + 1, revenue: 0, label: d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "").replace(/^\w/, c => c.toUpperCase()) };
+  });
+  const revenuePoints = historicoReceita.map((h) => h.revenue);
+  const maxVal = Math.max(...revenuePoints, 1);
 
   return (
     <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 animate-fade-in-up overflow-y-auto h-full">
@@ -319,25 +324,24 @@ export default function DashboardAnalytics() {
                   </filter>
                 </defs>
                 <path
-                  d={generateSmoothPath([], 100, 100, maxVal)}
+                  d={generateSmoothPath(revenuePoints, 100, 100, maxVal)}
                   vectorEffect="non-scaling-stroke"
-                  fill="none" 
-                  stroke="url(#lineGrad)" 
-                  strokeWidth="3" 
+                  fill="none"
+                  stroke="url(#lineGrad)"
+                  strokeWidth="3"
                   filter="url(#glow)"
                   className="transition-all duration-700 ease-in-out"
                 />
               </svg>
             </div>
 
-            {/* Bars — histórico mensal não disponível ainda */}
-            {monthsLabels.map((label, i) => (
+            {historicoReceita.map((h, i) => (
               <div key={i} className="flex flex-col items-center gap-2 w-full group relative z-10">
                 <div
-                  className="w-full max-w-[48px] rounded-t-md bg-[var(--bg-secondary)]/30 border-t border-[var(--border-subtle)]/20"
-                  style={{ height: "8%" }}
+                  className="w-full max-w-[48px] rounded-t-md bg-gradient-to-t from-[var(--gold-600)]/60 to-[var(--gold-300)]/40 border-t border-[var(--gold-400)]/30 transition-all duration-500"
+                  style={{ height: `${maxVal > 0 ? Math.max((h.revenue / maxVal) * 100, h.revenue > 0 ? 4 : 1) : 1}%` }}
                 />
-                <span className="text-xs font-medium text-[var(--text-muted)]">{label}</span>
+                <span className="text-xs font-medium text-[var(--text-muted)]">{h.label}</span>
               </div>
             ))}
           </div>

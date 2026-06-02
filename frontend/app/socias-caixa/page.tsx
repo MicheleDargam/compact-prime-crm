@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Printer,
   Plus,
+  Pencil,
 } from "lucide-react";
 
 // Types
@@ -37,14 +38,13 @@ interface PartnerPayout {
   status: PayoutStatus;
 }
 
-const PARTNERS = [
-  { id: "s1", name: "Clara Silva", avatar: "CS", sharePercent: 33.3 },
-  { id: "s2", name: "Beatriz Santos", avatar: "BS", sharePercent: 33.3 },
-  { id: "s3", name: "Alice Moreira", avatar: "AM", sharePercent: 33.4 },
-];
+function getInitials(nome: string): string {
+  const parts = nome.trim().split(" ").filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
-const RESERVE_PERCENT = 0.2;
-const RESERVE_GOAL = { target: 50000, objective: "Fundo de Expansão e Capital de Giro", accumulated: 26500 };
 
 const statusStyles: Record<PayoutStatus, { text: string; bg: string; border: string; icon: React.ReactNode }> = {
   Pago: {
@@ -70,10 +70,19 @@ const statusStyles: Record<PayoutStatus, { text: string; bg: string; border: str
 export default function DistribuicaoBuffetPage() {
   const { addExpense, getBuffetExpensesByMonth, getBuffetCategoriesForMonth, buffetMovementLog, addBuffetLog } = useCrmData();
 
-  const [selectedMonth, setSelectedMonth] = useState<string>("Maio 2026");
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const d = new Date();
+    return d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+      .replace(/^\w/, (c) => c.toUpperCase());
+  });
   const [monthlyWithdrawals, setMonthlyWithdrawals] = useState<Record<string, Record<string, number>>>({});
   const [apiRevenue, setApiRevenue] = useState(0);
   const [apiDespesaList, setApiDespesaList] = useState<{ categoria: string; valor: number }[]>([]);
+  const [partners, setPartners] = useState<{ id: string; name: string; avatar: string; sharePercent: number }[]>([]);
+  const [reserva, setReserva] = useState({ objetivo: "Fundo de Expansão e Capital de Giro", meta: 50000, acumulado: 0, percentual_reserva: 20 });
+  const [editReserva, setEditReserva] = useState(false);
+  const [reservaForm, setReservaForm] = useState({ objetivo: "", meta: "", acumulado: "", percentual_reserva: "" });
+  const [reservaSaving, setReservaSaving] = useState(false);
 
   function monthLabelToParam(label: string): string {
     const map: Record<string, string> = {
@@ -86,7 +95,62 @@ export default function DistribuicaoBuffetPage() {
   }
 
   useEffect(() => {
+    fetch("/api/configuracoes/socias")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.ok || !Array.isArray(json.data) || json.data.length === 0) return;
+        setPartners(json.data.map((s: { id: string; nome: string; percentual: number }) => ({
+          id: s.id,
+          name: s.nome,
+          avatar: getInitials(s.nome),
+          sharePercent: s.percentual,
+        })));
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/configuracoes/reserva")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.ok) return;
+        setReserva(json.data);
+        setReservaForm({
+          objetivo: json.data.objetivo ?? "",
+          meta: String(json.data.meta),
+          acumulado: String(json.data.acumulado),
+          percentual_reserva: String(json.data.percentual_reserva),
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  async function handleSaveReserva() {
+    setReservaSaving(true);
+    try {
+      const res = await fetch("/api/configuracoes/reserva", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          objetivo: reservaForm.objetivo,
+          meta: Number(reservaForm.meta),
+          acumulado: Number(reservaForm.acumulado),
+          percentual_reserva: Number(reservaForm.percentual_reserva),
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setReserva({ objetivo: reservaForm.objetivo, meta: Number(reservaForm.meta), acumulado: Number(reservaForm.acumulado), percentual_reserva: Number(reservaForm.percentual_reserva) });
+        setEditReserva(false);
+      }
+    } catch { /* silent */ } finally {
+      setReservaSaving(false);
+    }
+  }
+
+  useEffect(() => {
     const param = monthLabelToParam(selectedMonth);
+
     fetch(`/api/socias-caixa?month=${param}`)
       .then((r) => r.json())
       .then((json) => {
@@ -96,6 +160,18 @@ export default function DistribuicaoBuffetPage() {
             Object.entries(json.data.categorias as Record<string, number>).map(([categoria, valor]) => ({ categoria, valor }))
           );
         }
+      })
+      .catch(() => {});
+
+    fetch(`/api/socias-caixa/retiradas?mes=${param}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.ok || !Array.isArray(json.data)) return;
+        const map: Record<string, number> = {};
+        json.data.forEach((r: { socia_id: string; valor_retirado: number }) => {
+          map[r.socia_id] = r.valor_retirado;
+        });
+        setMonthlyWithdrawals((prev) => ({ ...prev, [selectedMonth]: map }));
       })
       .catch(() => {});
   }, [selectedMonth]);
@@ -108,10 +184,10 @@ export default function DistribuicaoBuffetPage() {
     apiDespesaList.reduce((s, d) => s + d.valor, 0);
   const buffetNetProfit = buffetRevenue - buffetTotalExpenses;
 
-  const reserveValue = buffetNetProfit * RESERVE_PERCENT;
+  const reserveValue = buffetNetProfit * (reserva.percentual_reserva / 100);
   const distributableAmount = buffetNetProfit - reserveValue;
   const currentWithdrawals = monthlyWithdrawals[selectedMonth] ?? {};
-  const activePartners: PartnerPayout[] = PARTNERS.map((p) => {
+  const activePartners: PartnerPayout[] = partners.map((p) => {
     const expectedValue = distributableAmount * (p.sharePercent / 100);
     const withdrawnValue = currentWithdrawals[p.id] ?? 0;
     const status: PayoutStatus = withdrawnValue >= expectedValue && expectedValue > 0 ? "Pago" : withdrawnValue > 0 ? "Parcial" : "Pendente";
@@ -239,10 +315,23 @@ export default function DistribuicaoBuffetPage() {
 
     const newWithdrawn = Math.min(selectedPartner.withdrawnValue + amountNum, selectedPartner.expectedValue);
     const newStatus: PayoutStatus = newWithdrawn >= selectedPartner.expectedValue ? "Pago" : "Parcial";
+
     setMonthlyWithdrawals(prev => ({
       ...prev,
       [selectedMonth]: { ...(prev[selectedMonth] ?? {}), [selectedPartner.id]: newWithdrawn },
     }));
+
+    fetch("/api/socias-caixa/retiradas", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        socia_id: selectedPartner.id,
+        mes_ano: monthLabelToParam(selectedMonth),
+        valor_retirado: newWithdrawn,
+        status: newStatus.toLowerCase(),
+      }),
+    }).catch(() => {});
+
     addBuffetLog(`[RET] Retirada de ${formatCurrency(amountNum)} registrada — ${selectedPartner.name}. Status: ${newStatus}.`);
     setShowPayoutModal(false);
     setSelectedPartner(null);
@@ -256,9 +345,9 @@ export default function DistribuicaoBuffetPage() {
   const handlePdfDownload = () => {
     setPdfDownloading(true);
     setTimeout(() => {
+      window.print();
       setPdfDownloading(false);
-      setShowPdfModal(false);
-    }, 1500);
+    }, 300);
   };
 
   const formatCurrency = (val: number) =>
@@ -285,9 +374,14 @@ export default function DistribuicaoBuffetPage() {
               onChange={handleMonthChange}
               className="appearance-none bg-[var(--bg-card)] text-sm font-medium text-[var(--text-primary)] px-4 py-2.5 pr-10 rounded-xl border border-[var(--border-default)] focus:outline-none focus:border-[var(--gold-400)] transition-all cursor-pointer shadow-card"
             >
-              <option value="Maio 2026">Maio 2026</option>
-              <option value="Abril 2026">Abril 2026</option>
-              <option value="Março 2026">Março 2026</option>
+              {Array.from({ length: 12 }, (_, i) => {
+                const d = new Date();
+                d.setDate(1);
+                d.setMonth(d.getMonth() - i);
+                const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+                  .replace(/^\w/, (c) => c.toUpperCase());
+                return <option key={label} value={label}>{label}</option>;
+              })}
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
               <Coins className="w-4 h-4 text-[var(--gold-300)]" />
@@ -461,47 +555,72 @@ export default function DistribuicaoBuffetPage() {
           <h2 className="text-lg font-bold text-[var(--text-primary)]">Caixa da Empresa (Reserva)</h2>
 
           <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] p-6 shadow-card">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[var(--gold-500)]/10 flex items-center justify-center text-[var(--gold-300)]">
-                  <Target className="w-4 h-4" />
+            {editReserva ? (
+              <div className="flex flex-col gap-3">
+                <p className="text-xs font-bold text-[var(--text-primary)]">Editar Reserva</p>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Objetivo</label>
+                  <input type="text" value={reservaForm.objetivo} onChange={(e) => setReservaForm(p => ({ ...p, objetivo: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-400)]" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-[var(--text-primary)]">Objetivo da Reserva</h3>
-                  <p className="text-xs text-[var(--gold-300)] font-medium">{RESERVE_GOAL.objective}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Meta (R$)</label>
+                    <input type="number" value={reservaForm.meta} onChange={(e) => setReservaForm(p => ({ ...p, meta: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-400)]" />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Acumulado (R$)</label>
+                    <input type="number" value={reservaForm.acumulado} onChange={(e) => setReservaForm(p => ({ ...p, acumulado: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-400)]" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">% Reserva do Lucro</label>
+                  <input type="number" min={0} max={100} value={reservaForm.percentual_reserva} onChange={(e) => setReservaForm(p => ({ ...p, percentual_reserva: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-400)]" />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={handleSaveReserva} disabled={reservaSaving} className="flex-1 py-2 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] text-black text-xs font-bold rounded-lg cursor-pointer disabled:opacity-60">{reservaSaving ? "Salvando..." : "Salvar"}</button>
+                  <button onClick={() => setEditReserva(false)} className="px-4 py-2 bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-secondary)] text-xs rounded-lg cursor-pointer">Cancelar</button>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Meta Planejada</p>
-                <p className="text-xs font-bold text-[var(--text-primary)]">{formatCurrency(RESERVE_GOAL.target)}</p>
-              </div>
-            </div>
-
-            <div className="bg-[var(--bg-primary)] border border-[var(--border-subtle)] p-4 rounded-xl">
-              <div className="flex justify-between items-center text-xs mb-2">
-                <span className="text-[var(--text-secondary)]">Progresso da Reserva</span>
-                <span className="font-bold text-[var(--gold-300)]">
-                  {((RESERVE_GOAL.accumulated / RESERVE_GOAL.target) * 100).toFixed(1)}% atingido
-                </span>
-              </div>
-              <div className="relative w-full h-3 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-                <div
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-[var(--gold-500)] to-[var(--gold-200)] rounded-full"
-                  style={{ width: `${(RESERVE_GOAL.accumulated / RESERVE_GOAL.target) * 100}%` }}
-                />
-                <div
-                  className="absolute top-0 h-full bg-emerald-500/50"
-                  style={{
-                    left: `${(RESERVE_GOAL.accumulated / RESERVE_GOAL.target) * 100}%`,
-                    width: `${(reserveValue / RESERVE_GOAL.target) * 100}%`
-                  }}
-                />
-              </div>
-              <div className="flex justify-between items-center text-[10px] text-[var(--text-muted)] mt-2">
-                <span>Valor atual: {formatCurrency(RESERVE_GOAL.accumulated)}</span>
-                <span className="text-emerald-400 font-medium">+ {formatCurrency(reserveValue)} este mês</span>
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[var(--gold-500)]/10 flex items-center justify-center text-[var(--gold-300)]">
+                      <Target className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm text-[var(--text-primary)]">Objetivo da Reserva</h3>
+                      <p className="text-xs text-[var(--gold-300)] font-medium">{reserva.objetivo}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Meta Planejada</p>
+                      <p className="text-xs font-bold text-[var(--text-primary)]">{formatCurrency(reserva.meta)}</p>
+                    </div>
+                    <button onClick={() => setEditReserva(true)} className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-[var(--bg-primary)] border border-[var(--border-subtle)] p-4 rounded-xl">
+                  <div className="flex justify-between items-center text-xs mb-2">
+                    <span className="text-[var(--text-secondary)]">Progresso da Reserva</span>
+                    <span className="font-bold text-[var(--gold-300)]">
+                      {reserva.meta > 0 ? ((reserva.acumulado / reserva.meta) * 100).toFixed(1) : "0.0"}% atingido
+                    </span>
+                  </div>
+                  <div className="relative w-full h-3 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                    <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-[var(--gold-500)] to-[var(--gold-200)] rounded-full" style={{ width: `${reserva.meta > 0 ? Math.min((reserva.acumulado / reserva.meta) * 100, 100) : 0}%` }} />
+                    <div className="absolute top-0 h-full bg-emerald-500/50" style={{ left: `${reserva.meta > 0 ? Math.min((reserva.acumulado / reserva.meta) * 100, 100) : 0}%`, width: `${reserva.meta > 0 ? Math.min((reserveValue / reserva.meta) * 100, 100) : 0}%` }} />
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-[var(--text-muted)] mt-2">
+                    <span>Valor atual: {formatCurrency(reserva.acumulado)}</span>
+                    <span className="text-emerald-400 font-medium">+ {formatCurrency(reserveValue)} este mês</span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -909,7 +1028,7 @@ export default function DistribuicaoBuffetPage() {
       {/* MODAL: EXPORTAR PDF */}
       {showPdfModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl animate-fade-in-up flex flex-col my-8">
+          <div id="pdf-report-content" className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl animate-fade-in-up flex flex-col my-8">
 
             <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-secondary)] shrink-0">
               <div className="flex items-center gap-2">

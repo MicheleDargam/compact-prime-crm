@@ -1,6 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export async function POST(request: NextRequest) {
+  try {
+    const { nomeCliente, tipoEvento, dataEvento, horario, observacoes } =
+      await request.json() as {
+        nomeCliente: string;
+        tipoEvento: string;
+        dataEvento: string;
+        horario?: string;
+        observacoes?: string;
+      };
+
+    if (!nomeCliente?.trim() || !tipoEvento?.trim() || !dataEvento?.trim()) {
+      return NextResponse.json({ ok: false, error: "Nome, tipo e data são obrigatórios." }, { status: 400 });
+    }
+
+    const dataEvtParsed = new Date(dataEvento);
+    if (isNaN(dataEvtParsed.getTime())) {
+      return NextResponse.json({ ok: false, error: "Data inválida." }, { status: 400 });
+    }
+
+    let horarioParsed: Date | null = null;
+    if (horario) {
+      const [h, m] = horario.split(":").map(Number);
+      if (!isNaN(h) && !isNaN(m)) {
+        horarioParsed = new Date(1970, 0, 1, h, m, 0);
+      }
+    }
+
+    // Find default category
+    const categoria = await prisma.categorias_cliente.findFirst({
+      where: { deleted_at: null },
+      orderBy: { prioridade: "asc" },
+    });
+
+    if (!categoria) {
+      return NextResponse.json({ ok: false, error: "Nenhuma categoria de cliente encontrada." }, { status: 422 });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const cliente = await tx.clientes.create({
+        data: {
+          nome: nomeCliente.trim(),
+          categoria_cliente_id: categoria.id,
+          origem: "Agenda",
+          observacoes: observacoes?.trim() || null,
+        },
+      });
+
+      const evento = await tx.eventos.create({
+        data: {
+          cliente_id: cliente.id,
+          tipo_evento: tipoEvento.trim(),
+          nome_evento: `${tipoEvento.trim()} — ${cliente.nome}`,
+          data_evento: dataEvtParsed,
+          horario: horarioParsed,
+          status: "lead",
+          observacoes: observacoes?.trim() || null,
+        },
+      });
+
+      return { clienteId: cliente.id, eventoId: evento.id };
+    });
+
+    return NextResponse.json({ ok: true, data: result }, { status: 201 });
+  } catch (error) {
+    console.error("[POST /api/agenda]", error);
+    return NextResponse.json({ ok: false, error: "Erro interno." }, { status: 500 });
+  }
+}
+
 function normalizeEventType(tipo: string): string {
   const t = tipo.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   if (t.includes("casamento")) return "casamento";

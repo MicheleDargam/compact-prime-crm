@@ -296,3 +296,10 @@ body {
 .stagger-3 { animation-delay: 0.15s; }
 .stagger-4 { animation-delay: 0.2s; }
 .stagger-5 { animation-delay: 0.25s; }
+
+/* ===== Print: mostra só o relatório do PDF modal ===== */
+@media print {
+  body > * { display: none !important; }
+  #pdf-report-content { display: block !important; position: fixed; inset: 0; background: white; color: black; padding: 32px; font-family: "Inter", sans-serif; }
+  #pdf-report-content * { color: black !important; background: transparent !important; border-color: #ccc !important; box-shadow: none !important; }
+}

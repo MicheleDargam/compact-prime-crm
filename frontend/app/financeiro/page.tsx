@@ -156,6 +156,13 @@ export default function FinanceiroPage() {
   const [recordForInstallments, setRecordForInstallments] = useState<FinanceRecord | null>(null);
   const [showNewCharge, setShowNewCharge] = useState(false);
   const [chargeRecord, setChargeRecord] = useState<FinanceRecord | null>(null);
+  const [chargeSelectedId, setChargeSelectedId] = useState("");
+  const [chargeValor, setChargeValor] = useState("");
+  const [chargeVencimento, setChargeVencimento] = useState("");
+  const [chargeDescricao, setChargeDescricao] = useState("");
+  const [chargeObs, setChargeObs] = useState("");
+  const [chargeSaving, setChargeSaving] = useState(false);
+  const [payComprovante, setPayComprovante] = useState<File | null>(null);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [chargeConfirmed, setChargeConfirmed] = useState(false);
   const [emitReceipt, setEmitReceipt] = useState(true);
@@ -571,14 +578,21 @@ export default function FinanceiroPage() {
                     <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Observações</label>
                     <textarea rows={2} placeholder="Ex: Pagamento referente à parcela 4/10..." value={payObservacoes} onChange={(e) => setPayObservacoes(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors resize-none" />
                   </div>
-                  {/* Comprovante mock */}
+                  {/* Comprovante */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Comprovante</label>
-                    <div className="border-2 border-dashed border-[var(--border-subtle)] rounded-xl p-5 flex flex-col items-center gap-2 hover:border-[var(--gold-500)]/30 hover:bg-[var(--gold-500)]/5 transition-all cursor-pointer">
+                    <label className="border-2 border-dashed border-[var(--border-subtle)] rounded-xl p-5 flex flex-col items-center gap-2 hover:border-[var(--gold-500)]/30 hover:bg-[var(--gold-500)]/5 transition-all cursor-pointer">
                       <Upload className="w-6 h-6 text-[var(--text-muted)]" />
-                      <p className="text-xs text-[var(--text-muted)] text-center">Arraste o comprovante ou <span className="text-[var(--gold-400)]">clique para selecionar</span></p>
-                      <p className="text-[10px] text-[var(--text-muted)]">PDF, PNG, JPG até 5MB</p>
-                    </div>
+                      {payComprovante ? (
+                        <p className="text-xs text-[var(--gold-300)] font-medium text-center">{payComprovante.name}</p>
+                      ) : (
+                        <>
+                          <p className="text-xs text-[var(--text-muted)] text-center">Clique para selecionar o comprovante</p>
+                          <p className="text-[10px] text-[var(--text-muted)]">PDF, PNG, JPG até 5MB</p>
+                        </>
+                      )}
+                      <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden" onChange={e => setPayComprovante(e.target.files?.[0] ?? null)} />
+                    </label>
                   </div>
                   {/* Checkbox */}
                   <label className="flex items-center gap-3 cursor-pointer group" onClick={() => setEmitReceipt((v) => !v)}>
@@ -597,6 +611,16 @@ export default function FinanceiroPage() {
                     if (!recordForPayment) return;
                     const valorNum = parseFloat(payValorRecebido.replace(",", ".")) || 0;
                     try {
+                      // Upload comprovante first if present
+                      let comprovanteUrl: string | null = null;
+                      if (payComprovante) {
+                        const form = new FormData();
+                        form.append("comprovante", payComprovante);
+                        const upRes = await fetch("/api/financeiro/pagamentos/comprovante", { method: "POST", body: form });
+                        const upJson = await upRes.json();
+                        if (upJson.ok) comprovanteUrl = upJson.url;
+                      }
+
                       const res = await fetch("/api/financeiro/pagamentos", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -608,6 +632,7 @@ export default function FinanceiroPage() {
                           formaPagamento: payFormaPagamento,
                           observacoes: payObservacoes || null,
                           dataPagamento: payDataPagamento || null,
+                          comprovante_url: comprovanteUrl,
                         }),
                       });
                       const json = await res.json();
@@ -616,7 +641,7 @@ export default function FinanceiroPage() {
                       return;
                     }
                     setPaymentConfirmed(true);
-                    setPayValorRecebido(""); setPayDataPagamento(""); setPayFormaPagamento("PIX"); setPayObservacoes("");
+                    setPayValorRecebido(""); setPayDataPagamento(""); setPayFormaPagamento("PIX"); setPayObservacoes(""); setPayComprovante(null);
                   }}
                   className="w-full bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black font-bold py-3 rounded-xl text-sm transition-all shadow-md"
                 >
@@ -750,7 +775,8 @@ export default function FinanceiroPage() {
                   ) : (
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Cliente</label>
-                      <select className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors">
+                      <select value={chargeSelectedId} onChange={e => setChargeSelectedId(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors cursor-pointer">
+                        <option value="">Selecione um cliente...</option>
                         {records.map((r) => (
                           <option key={r.id} value={r.id}>{r.client} — {r.eventType}</option>
                         ))}
@@ -760,34 +786,52 @@ export default function FinanceiroPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Valor</label>
-                      <input type="text" placeholder="R$ 0,00" className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors" />
+                      <input type="text" placeholder="R$ 0,00" value={chargeValor} onChange={e => setChargeValor(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors" />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Vencimento</label>
-                      <input type="date" className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors" />
+                      <input type="date" value={chargeVencimento} onChange={e => setChargeVencimento(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors" />
                     </div>
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Descrição</label>
-                    <input type="text" placeholder="Ex: Hora extra equipe de garçons, nova decoração..." className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors" />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Serviço Relacionado</label>
-                    <select className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors">
-                      <option>Buffet</option>
-                      <option>Decoração</option>
-                      <option>Fotografia</option>
-                      <option>Combo</option>
-                      <option>Geral / Não vinculado</option>
-                    </select>
+                    <input type="text" placeholder="Ex: Hora extra equipe de garçons, nova decoração..." value={chargeDescricao} onChange={e => setChargeDescricao(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors" />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Observações Internas</label>
-                    <textarea rows={3} placeholder="Notas internas para as sócias..." className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors resize-none" />
+                    <textarea rows={3} placeholder="Notas internas para as sócias..." value={chargeObs} onChange={e => setChargeObs(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-500)]/50 transition-colors resize-none" />
                   </div>
                   <button
-                    onClick={() => setChargeConfirmed(true)}
-                    className="w-full bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black font-bold py-3 rounded-xl text-sm transition-all shadow-md"
+                    disabled={chargeSaving}
+                    onClick={async () => {
+                      const target = chargeRecord ?? records.find(r => r.id === chargeSelectedId);
+                      if (!target) return;
+                      const valorNum = parseFloat(chargeValor.replace(",", ".").replace(/[R$\s]/g, "")) || 0;
+                      if (!valorNum) return;
+                      setChargeSaving(true);
+                      try {
+                        const res = await fetch("/api/financeiro/pagamentos", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            eventoId: target.eventoId,
+                            clienteId: target.clienteId,
+                            valorTotal: valorNum,
+                            valorRecebido: 0,
+                            formaPagamento: "pix",
+                            observacoes: [chargeDescricao, chargeObs].filter(Boolean).join(" | ") || null,
+                            dataPagamento: chargeVencimento || null,
+                          }),
+                        });
+                        const json = await res.json();
+                        if (!json.ok) return;
+                        setChargeConfirmed(true);
+                        setChargeValor(""); setChargeVencimento(""); setChargeDescricao(""); setChargeObs(""); setChargeSelectedId("");
+                      } finally {
+                        setChargeSaving(false);
+                      }
+                    }}
+                    className="w-full bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] hover:from-[var(--gold-700)] hover:to-[var(--gold-500)] text-black font-bold py-3 rounded-xl text-sm transition-all shadow-md disabled:opacity-60"
                   >
                     Emitir Cobrança
                   </button>

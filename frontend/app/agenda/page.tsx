@@ -103,6 +103,16 @@ export default function AgendaPage() {
   const [activeServiceFilter, setActiveServiceFilter] = useState("Todos");
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
 
+  // Novo Agendamento
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newNome, setNewNome] = useState("");
+  const [newTipo, setNewTipo] = useState("Casamento");
+  const [newData, setNewData] = useState("");
+  const [newHorario, setNewHorario] = useState("");
+  const [newObs, setNewObs] = useState("");
+  const [newSaving, setNewSaving] = useState(false);
+  const [newError, setNewError] = useState("");
+
   const monthLabel = `${MONTH_NAMES[currentMonth - 1]} ${currentYear}`;
 
   useEffect(() => {
@@ -127,6 +137,31 @@ export default function AgendaPage() {
   const handleNextMonth = () => {
     if (currentMonth === 12) { setCurrentYear(y => y + 1); setCurrentMonth(1); }
     else setCurrentMonth(m => m + 1);
+  };
+
+  const handleSaveAgendamento = async () => {
+    setNewError("");
+    if (!newNome.trim() || !newData) { setNewError("Nome e data são obrigatórios."); return; }
+    setNewSaving(true);
+    try {
+      const res = await fetch("/api/agenda", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nomeCliente: newNome, tipoEvento: newTipo, dataEvento: newData, horario: newHorario || undefined, observacoes: newObs || undefined }),
+      });
+      const json = await res.json();
+      if (!json.ok) { setNewError(json.error ?? "Erro ao salvar."); return; }
+      setShowNewModal(false);
+      setNewNome(""); setNewTipo("Casamento"); setNewData(""); setNewHorario(""); setNewObs(""); setNewError("");
+      // Refresh calendar
+      const r = await fetch(`/api/agenda?year=${currentYear}&month=${currentMonth}`);
+      const j = await r.json();
+      if (j.ok) {
+        const built = buildCalendarDays(j.data.year, j.data.month, j.data.events);
+        setCalendarDays(built);
+      }
+    } catch { setNewError("Erro de conexão."); }
+    finally { setNewSaving(false); }
   };
 
   const handleSelectDay = (day: CalendarDay) => {
@@ -381,19 +416,70 @@ export default function AgendaPage() {
       </div>
 
       {/* Floating Action Button (FAB) */}
-      <button 
-        className="
-          fixed bottom-6 right-6 sm:bottom-8 sm:right-8 
-          w-14 h-14 bg-gradient-to-tr from-[var(--gold-600)] to-[var(--gold-400)]
-          rounded-full flex items-center justify-center text-[var(--bg-primary)]
-          shadow-[var(--shadow-gold-glow)] hover:scale-105 hover:shadow-lg transition-all duration-300
-          focus:outline-none focus:ring-2 focus:ring-[var(--gold-300)] focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)]
-          z-50 cursor-pointer
-        "
-        title="Adicionar Novo Evento"
+      <button
+        onClick={() => { setNewData(`${currentYear}-${String(currentMonth).padStart(2,"0")}-${String(selectedDay?.date ?? now.getDate()).padStart(2,"0")}`); setShowNewModal(true); }}
+        className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 w-14 h-14 bg-gradient-to-tr from-[var(--gold-600)] to-[var(--gold-400)] rounded-full flex items-center justify-center text-[var(--bg-primary)] shadow-[var(--shadow-gold-glow)] hover:scale-105 hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[var(--gold-300)] focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)] z-50 cursor-pointer"
+        title="Adicionar Novo Agendamento"
       >
         <Plus className="w-7 h-7" />
       </button>
+
+      {/* Modal Novo Agendamento */}
+      {showNewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl w-full max-w-md shadow-2xl animate-fade-in-up">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] rounded-t-2xl">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[var(--gold-300)]" />
+                <h3 className="font-bold text-sm text-[var(--text-primary)]">Novo Agendamento</h3>
+              </div>
+              <button onClick={() => setShowNewModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">
+                <ClipboardList className="w-4 h-4 hidden" />
+                <span className="text-lg leading-none">×</span>
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Nome do Cliente *</label>
+                <input type="text" placeholder="Ex: Maria Oliveira" value={newNome} onChange={e => setNewNome(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold-400)]" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Tipo *</label>
+                  <select value={newTipo} onChange={e => setNewTipo(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-400)] cursor-pointer">
+                    {["Casamento","Infantil","Adulto","Corporativo","Visita Técnica","Reunião Comercial"].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Horário</label>
+                  <input type="time" value={newHorario} onChange={e => setNewHorario(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-400)]" />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Data *</label>
+                <input type="date" value={newData} onChange={e => setNewData(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-400)]" />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Observações</label>
+                <textarea rows={2} placeholder="Detalhes do agendamento..." value={newObs} onChange={e => setNewObs(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold-400)] resize-none" />
+              </div>
+
+              {newError && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{newError}</p>}
+
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => setShowNewModal(false)} className="flex-1 py-2.5 border border-[var(--border-default)] text-[var(--text-secondary)] rounded-lg text-xs font-semibold hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer">Cancelar</button>
+                <button onClick={handleSaveAgendamento} disabled={newSaving} className="flex-1 py-2.5 bg-gradient-to-r from-[var(--gold-600)] to-[var(--gold-400)] text-black rounded-lg text-xs font-bold transition-all disabled:opacity-60 cursor-pointer">
+                  {newSaving ? "Salvando..." : "Salvar Agendamento"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

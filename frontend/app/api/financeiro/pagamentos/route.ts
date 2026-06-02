@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { eventoId, clienteId, valorTotal, valorRecebido, formaPagamento, observacoes, dataPagamento } = body;
+    const { eventoId, clienteId, valorTotal, valorRecebido, formaPagamento, observacoes, dataPagamento, comprovante_url } = body;
 
     if (!eventoId || !clienteId || !valorTotal) {
       return NextResponse.json({ ok: false, error: "Campos obrigatórios ausentes." }, { status: 400 });
@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
         forma_pagamento: formaPagamento ?? "pix",
         observacoes: observacoes ?? null,
         data_pagamento: dataPagamento ? new Date(dataPagamento) : new Date(),
+        comprovante_url: comprovante_url ?? null,
       },
     });
 

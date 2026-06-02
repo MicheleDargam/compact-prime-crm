@@ -244,21 +244,41 @@ export default function PropostasPage() {
     );
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editProposal) return;
     const newServicos = editServicos.length > 0 ? editServicos : editProposal.servicosContratados;
     const discount = COMBO_DISCOUNTS[newServicos.length as keyof typeof COMBO_DISCOUNTS] ?? 0;
+
+    // Keep existing prices for services that remain
+    const servicoDetails: Record<string, { valorEstimado: number; observacoes: string | null }> = {};
+    newServicos.forEach((tipo) => {
+      const existingCents = editProposal.valoresPorServico[tipo as keyof typeof editProposal.valoresPorServico] ?? 0;
+      servicoDetails[tipo] = { valorEstimado: existingCents / 100, observacoes: null };
+    });
+
+    try {
+      const res = await fetch(`/api/painel-clientes/${editProposal.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: editProposal.client,
+          tipoEvento: editEventType,
+          servicos: newServicos,
+          servicoDetails,
+          observacoes: editObservacoes || null,
+        }),
+      });
+      const json = await res.json();
+      if (!json.ok) { alert(json.error ?? "Erro ao salvar proposta."); return; }
+    } catch {
+      alert("Erro de conexão. Tente novamente.");
+      return;
+    }
+
     setProposals((prev) =>
       prev.map((p) =>
         p.id === editProposal.id
-          ? {
-              ...p,
-              eventType: editEventType,
-              servicosContratados: newServicos,
-              validity: editValidade,
-              descontoCombo: discount,
-              totalCents: Math.round(p.subtotalCents * (1 - discount)),
-            }
+          ? { ...p, eventType: editEventType, servicosContratados: newServicos, validity: editValidade, descontoCombo: discount, totalCents: Math.round(p.subtotalCents * (1 - discount)) }
           : p
       )
     );
