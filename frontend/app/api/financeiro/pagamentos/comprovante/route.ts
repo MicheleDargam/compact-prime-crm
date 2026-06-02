@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,14 +26,21 @@ export async function POST(request: NextRequest) {
     }
 
     const ext = file.type === "application/pdf" ? "pdf" : file.type.split("/")[1];
-    const filename = `comprovante_${Date.now()}.${ext}`;
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "comprovantes");
-
-    await mkdir(uploadsDir, { recursive: true });
+    const storagePath = `comprovantes/comprovante_${Date.now()}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(uploadsDir, filename), buffer);
 
-    return NextResponse.json({ ok: true, url: `/uploads/comprovantes/${filename}` });
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from("uploads")
+      .upload(storagePath, buffer, { contentType: file.type });
+
+    if (uploadError) {
+      console.error("[comprovante upload]", uploadError);
+      return NextResponse.json({ ok: false, error: "Erro ao enviar arquivo." }, { status: 500 });
+    }
+
+    const { data: urlData } = supabaseAdmin.storage.from("uploads").getPublicUrl(storagePath);
+
+    return NextResponse.json({ ok: true, url: urlData.publicUrl });
   } catch (error) {
     console.error("[POST /api/financeiro/pagamentos/comprovante]", error);
     return NextResponse.json({ ok: false, error: "Erro interno." }, { status: 500 });

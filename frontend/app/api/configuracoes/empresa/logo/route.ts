@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,24 +28,30 @@ export async function POST(request: NextRequest) {
     }
 
     const ext = file.type === "image/svg+xml" ? "svg" : file.type.split("/")[1];
-    const filename = `logo.${ext}`;
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-
-    await mkdir(uploadsDir, { recursive: true });
+    const storagePath = `logos/logo.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(uploadsDir, filename), buffer);
 
-    const logoUrl = `/uploads/${filename}`;
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from("uploads")
+      .upload(storagePath, buffer, { contentType: file.type, upsert: true });
+
+    if (uploadError) {
+      console.error("[logo upload]", uploadError);
+      return NextResponse.json({ ok: false, error: "Erro ao enviar arquivo." }, { status: 500 });
+    }
+
+    const { data: urlData } = supabaseAdmin.storage.from("uploads").getPublicUrl(storagePath);
+    const publicUrl = urlData.publicUrl;
 
     await prisma.$executeRaw`
       INSERT INTO configuracoes_empresa (id, logo_url, updated_at)
-      VALUES ('singleton', ${logoUrl}, NOW())
+      VALUES ('singleton', ${publicUrl}, NOW())
       ON CONFLICT (id) DO UPDATE SET
         logo_url   = EXCLUDED.logo_url,
         updated_at = NOW()
     `;
 
-    return NextResponse.json({ ok: true, url: logoUrl });
+    return NextResponse.json({ ok: true, url: `${publicUrl}?t=${Date.now()}` });
   } catch (error) {
     console.error("[POST /api/configuracoes/empresa/logo]", error);
     return NextResponse.json({ ok: false, error: "Erro interno." }, { status: 500 });
