@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const registros = await prisma.evento_funcionarios.findMany({
+      where: {
+        eventos: {
+          evento_servicos: { some: { servicos: { tipo: "buffet" } } },
+        },
+      },
       orderBy: { created_at: "desc" },
       take: 50,
       include: {

@@ -1,7 +1,6 @@
 generator client {
   provider        = "prisma-client"
   output          = "../generated/prisma"
-  // output relativo a frontend/prisma/ → gera em frontend/generated/prisma/
   previewFeatures = ["partialIndexes"]
 }
 
@@ -281,7 +280,7 @@ model pagamentos {
   @@index([cliente_id], map: "idx_pag_cliente")
   @@index([contrato_id], map: "idx_pag_contrato", where: raw("(contrato_id IS NOT NULL)"))
   @@index([evento_id], map: "idx_pag_evento")
-  @@index([data_pagamento], map: "idx_pag_pendentes", where: raw("((status)::text = ANY ((ARRAY['pendente'::character varying, 'parcial'::character varying])::text[]))"))
+  @@index([data_pagamento], map: "idx_pag_pendentes", where: raw("((status)::text = ANY (ARRAY[('pendente'::character varying)::text, ('parcial'::character varying)::text]))"))
   @@index([status], map: "idx_pag_status")
 }
 
@@ -302,7 +301,7 @@ model parcelas {
 
   @@unique([pagamento_id, numero_parcela], map: "uq_parcela_numero")
   @@index([pagamento_id], map: "idx_parcelas_pagamento")
-  @@index([vencimento, status], map: "idx_parcelas_pendentes", where: raw("((status)::text = ANY ((ARRAY['pendente'::character varying, 'atrasado'::character varying])::text[]))"))
+  @@index([vencimento, status], map: "idx_parcelas_pendentes", where: raw("((status)::text = ANY (ARRAY[('pendente'::character varying)::text, ('atrasado'::character varying)::text]))"))
   @@index([vencimento], map: "idx_parcelas_vencimento")
 }
 
@@ -395,6 +394,61 @@ model regras_comerciais {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model configuracoes_empresa {
+  id                      String   @id @default("singleton")
+  nome_fantasia           String?  @db.VarChar(200)
+  razao_social            String?  @db.VarChar(300)
+  cnpj                    String?  @db.VarChar(18)
+  endereco                String?
+  telefone                String?  @db.VarChar(30)
+  email                   String?  @db.VarChar(254)
+  responsavel_legal       String?  @db.VarChar(200)
+  cargo_responsavel       String?  @db.VarChar(100)
+  assinatura_texto        String?  @db.VarChar(200)
+  slogan                  String?
+  updated_at              DateTime @default(now()) @db.Timestamptz(6)
+  logo_url                String?  @db.VarChar(500)
+  observacoes_financeiras String?
+  parcelamento_padrao     String?
+  sinal_minimo            String?  @db.VarChar(200)
+  validade_proposta       String?  @db.VarChar(100)
+}
+
+model reserva_buffet {
+  id                 String   @id @default("singleton")
+  objetivo           String?
+  meta               Decimal  @default(50000) @db.Decimal(12, 2)
+  acumulado          Decimal  @default(0) @db.Decimal(12, 2)
+  percentual_reserva Int      @default(20) @db.SmallInt
+  updated_at         DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model socias {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome             String             @db.VarChar(200)
+  cargo            String             @db.VarChar(100)
+  email            String?            @db.VarChar(254)
+  telefone         String?            @db.VarChar(30)
+  percentual       Int                @default(50) @db.SmallInt
+  ordem            Int                @default(0) @db.SmallInt
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  retiradas_socias retiradas_socias[]
+}
+
+model retiradas_socias {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  socia_id       String   @db.Uuid
+  mes_ano        String   @db.VarChar(7)
+  valor_retirado Decimal  @default(0) @db.Decimal(12, 2)
+  status         String   @default("pendente") @db.VarChar(20)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+  socias         socias   @relation(fields: [socia_id], references: [id], onDelete: Cascade)
+
+  @@unique([socia_id, mes_ano])
+}
+
 model servicos {
   id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nome              String              @unique @db.VarChar(150)

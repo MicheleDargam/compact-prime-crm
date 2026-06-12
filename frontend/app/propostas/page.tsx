@@ -123,7 +123,7 @@ const clausulas = [
   {
     num: "4",
     titulo: "DO FORO",
-    texto: "As partes elegem o Foro da Comarca de São Paulo/SP para dirimir quaisquer dúvidas oriundas do presente contrato, renunciando expressamente a qualquer outro.",
+    texto: "As partes elegem o Foro da Comarca de Rio de Janeiro/RJ para dirimir quaisquer dúvidas oriundas do presente contrato, renunciando expressamente a qualquer outro.",
   },
 ];
 
@@ -1043,21 +1043,12 @@ export default function PropostasPage() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-center text-[9px] text-neutral-400 mt-6">São Paulo, {new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}</p>
+                  <p className="text-center text-[9px] text-neutral-400 mt-6">{new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}</p>
                 </div>
 
               </div>
             </div>
 
-            {/* Integration notice + actions */}
-            <div className="px-6 pt-4 pb-2 bg-violet-500/5 border-t border-violet-500/15 shrink-0">
-              <div className="flex items-start gap-2">
-                <Info className="w-3.5 h-3.5 text-violet-400 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-violet-300/80 leading-relaxed">
-                  <span className="font-bold text-violet-300">Integração automática:</span> contratos convertidos alimentam automaticamente Agenda, Financeiro e Operação. A sincronização ocorrerá ao confirmar a assinatura.
-                </p>
-              </div>
-            </div>
 
             <div className="px-6 py-3 bg-[var(--bg-secondary)] flex justify-end gap-2 shrink-0">
               <button
