@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserEmail } from "@/lib/auth";
 
 const VALID_STATUSES = ["lead", "proposta", "negociacao", "fechado", "cancelado"];
 const VALID_EVENT_TYPES = ["Casamento", "Infantil", "Adulto", "Corporativo"];
@@ -113,10 +114,26 @@ export async function PATCH(
   }
 
   try {
-    await prisma.eventos.update({
-      where: { id: eventoId },
-      data: { status, updated_at: new Date() },
+    const [eventoAtual, userEmail] = await Promise.all([
+      prisma.eventos.findFirst({ where: { id: eventoId }, select: { status: true } }),
+      getUserEmail(request),
+    ]);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.eventos.update({
+        where: { id: eventoId },
+        data: { status, updated_at: new Date() },
+      });
+      await tx.evento_status_historico.create({
+        data: {
+          evento_id: eventoId,
+          status_de: eventoAtual?.status ?? null,
+          status_para: status,
+          alterado_por: userEmail,
+        },
+      });
     });
+
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {
@@ -299,22 +316,40 @@ export async function DELETE(
   }
 
   try {
+    const [evento, userEmail] = await Promise.all([
+      prisma.eventos.findFirst({ where: { id: eventoId, deleted_at: null } }),
+      getUserEmail(request),
+    ]);
+
+    if (!evento) {
+      return NextResponse.json({ ok: false, error: "Evento não encontrado." }, { status: 404 });
+    }
+
     if (action === "arquivar") {
-      await prisma.eventos.update({
-        where: { id: eventoId },
-        data: { deleted_at: new Date(), updated_at: new Date() },
+      await prisma.$transaction(async (tx) => {
+        await tx.eventos.update({
+          where: { id: eventoId },
+          data: { deleted_at: new Date(), updated_at: new Date() },
+        });
+        await tx.evento_status_historico.create({
+          data: {
+            evento_id: eventoId,
+            status_de: evento.status,
+            status_para: "arquivado",
+            alterado_por: userEmail,
+          },
+        });
       });
     } else {
-      const evento = await prisma.eventos.findFirst({
-        where: { id: eventoId, deleted_at: null },
-      });
-      if (!evento) {
-        return NextResponse.json(
-          { ok: false, error: "Evento não encontrado." },
-          { status: 404 }
-        );
-      }
       await prisma.$transaction(async (tx) => {
+        await tx.evento_status_historico.create({
+          data: {
+            evento_id: eventoId,
+            status_de: evento.status,
+            status_para: "excluido",
+            alterado_por: userEmail,
+          },
+        });
         await tx.eventos.update({
           where: { id: eventoId },
           data: { deleted_at: new Date(), updated_at: new Date() },

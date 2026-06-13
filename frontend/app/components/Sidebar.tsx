@@ -51,7 +51,7 @@ function Icon({ name, className = "w-5 h-5" }: { name: string; className?: strin
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [userEmail, setUserEmail] = useState("admin@compactprime.com");
+  const [userEmail, setUserEmail] = useState("");
   const pathname = usePathname();
   const router = useRouter();
 
@@ -138,8 +138,8 @@ export default function Sidebar() {
             <div className="flex items-center gap-3 px-1">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0" style={{ background: "var(--gold-500)", color: "#000" }}>CP</div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>Admin</p>
-                <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{userEmail}</p>
+                <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{userEmail ? userEmail.split("@")[0] : "..."}</p>
+                <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{userEmail || "carregando..."}</p>
               </div>
               <button
                 onClick={handleLogout}
