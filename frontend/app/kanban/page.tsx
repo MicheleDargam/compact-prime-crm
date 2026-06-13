@@ -65,7 +65,8 @@ export default function KanbanPage() {
     if (!val.trim()) return 0;
     const clean = val.replace(/[R$\s]/g, "");
     if (clean.includes(",")) return parseFloat(clean.replace(/\./g, "").replace(",", ".")) || 0;
-    return parseFloat(clean) || 0;
+    // Sem vírgula: ponto é separador de milhar no formato BR (ex: "1.500" = 1500)
+    return parseFloat(clean.replace(/\./g, "")) || 0;
   }
 
   const handleSaveLead = async () => {
