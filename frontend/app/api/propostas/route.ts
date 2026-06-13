@@ -21,20 +21,25 @@ function mapStatus(dbStatus: string): string {
 
 export async function GET() {
   try {
-    const eventos = await prisma.eventos.findMany({
-      where: {
-        deleted_at: null,
-        status: { in: ["proposta", "negociacao", "fechado"] },
-        tipo_evento: { in: KANBAN_EVENT_TYPES },
-      },
-      orderBy: { created_at: "desc" },
-      include: {
-        clientes: true,
-        evento_servicos: {
-          include: { servicos: true },
+    const [eventos, config] = await Promise.all([
+      prisma.eventos.findMany({
+        where: {
+          deleted_at: null,
+          status: { in: ["proposta", "negociacao", "fechado"] },
+          tipo_evento: { in: KANBAN_EVENT_TYPES },
         },
-      },
-    });
+        orderBy: { created_at: "desc" },
+        include: {
+          clientes: true,
+          evento_servicos: {
+            include: { servicos: true },
+          },
+        },
+      }),
+      prisma.configuracoes_empresa.findFirst({ where: { id: "singleton" }, select: { validade_proposta: true } }).catch(() => null),
+    ]);
+
+    const validadeProposta = config?.validade_proposta ?? "15 dias";
 
     let enviadas = 0;
     let negociacao = 0;
@@ -70,7 +75,7 @@ export async function GET() {
         client: e.clientes.nome,
         eventType: e.tipo_evento,
         sendDate,
-        validity: "15 dias",
+        validity: validadeProposta,
         status,
         servicosContratados,
         valoresPorServico,

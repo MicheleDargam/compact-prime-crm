@@ -61,24 +61,29 @@ const VALID_EVENT_TYPES: EventType[] = [
 ];
 
 export async function GET() {
-  const eventos = await prisma.eventos.findMany({
-    where: {
-      deleted_at: null,
-      tipo_evento: { in: KANBAN_EVENT_TYPES },
-    },
-    orderBy: { created_at: "desc" },
-    include: {
-      clientes: {
-        include: {
-          categorias_cliente: true,
-          cliente_telefones: true,
+  const [eventos, config] = await Promise.all([
+    prisma.eventos.findMany({
+      where: {
+        deleted_at: null,
+        tipo_evento: { in: KANBAN_EVENT_TYPES },
+      },
+      orderBy: { created_at: "desc" },
+      include: {
+        clientes: {
+          include: {
+            categorias_cliente: true,
+            cliente_telefones: true,
+          },
+        },
+        evento_servicos: {
+          include: { servicos: true },
         },
       },
-      evento_servicos: {
-        include: { servicos: true },
-      },
-    },
-  });
+    }),
+    prisma.configuracoes_empresa.findFirst({ where: { id: "singleton" }, select: { validade_proposta: true } }).catch(() => null),
+  ]);
+
+  const validadeProposta = config?.validade_proposta ?? "15 dias";
 
   const leadsMap: Record<string, Lead> = {};
   const columnLeadIds: Record<string, string[]> = {
@@ -141,7 +146,7 @@ export async function GET() {
       buffetTime: "5 horas",
       value: formatCurrency(totalCents),
       valueCents: totalCents,
-      validity: "15 dias",
+      validity: validadeProposta,
       notes: evento.observacoes ?? undefined,
       servicosContratados,
       valoresPorServico,

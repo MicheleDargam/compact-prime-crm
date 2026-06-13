@@ -43,11 +43,12 @@ interface EmpresaConfig {
   cargo_responsavel: string;
   assinatura_texto: string;
   slogan: string;
+  validade_proposta: string;
 }
 
 const EMPRESA_DEFAULTS: EmpresaConfig = {
-  nome_fantasia: "COMPACT PRIME",
-  razao_social: "Compact Prime Buffet & Eventos Ltda",
+  nome_fantasia: "",
+  razao_social: "",
   cnpj: "",
   endereco: "",
   telefone: "",
@@ -55,7 +56,8 @@ const EMPRESA_DEFAULTS: EmpresaConfig = {
   responsavel_legal: "",
   cargo_responsavel: "",
   assinatura_texto: "",
-  slogan: "Buffet & Eventos Premium",
+  slogan: "",
+  validade_proposta: "15 dias",
 };
 
 interface Proposal {
@@ -212,7 +214,7 @@ export default function PropostasPage() {
     }).join("");
     const win = window.open("", "_blank");
     if (!win) return;
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Proposta – ${selectedProposal.client}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;color:#111;background:#fff;padding:40px}h1{font-size:18px;color:#92400e;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}p{margin:0}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#f9f9f9;padding:6px 8px;border:1px solid #e5e7eb;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}.total-row td{font-weight:700;font-size:13px;border-top:2px solid #92400e}.section-title{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#6b7280;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:12px;font-family:sans-serif;font-weight:700}@media print{body{padding:20px}}</style></head><body><div style="border-bottom:2px solid #b45309;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between"><div><h1>${empresa.nome_fantasia}</h1><p style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;font-family:sans-serif">${empresa.slogan}</p></div><div style="text-align:right;font-size:11px;color:#6b7280;font-family:sans-serif"><p>Data: ${selectedProposal.sendDate}</p><p style="margin-top:4px">Validade: ${selectedProposal.validity}</p><p style="font-family:monospace;font-size:10px;font-weight:700;margin-top:4px">ORC-${selectedProposal.id}2026</p></div></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px"><p style="font-weight:600;color:#1f2937;font-size:13px">Prezado(a) ${selectedProposal.client},</p><p style="margin-top:8px;color:#4b5563;line-height:1.6">Agradecemos a oportunidade de apresentar nosso orçamento personalizado para o seu evento. Abaixo detalhamos os serviços integrados e os respectivos valores operacionais conforme as premissas acordadas.</p></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px;background:#f9f9f9;border:1px solid #e5e7eb;border-radius:4px;padding:12px"><p class="section-title" style="margin-bottom:8px">Premissas do Evento</p><p><strong>Cliente:</strong> ${selectedProposal.client} &nbsp;&nbsp; <strong>Tipo de Evento:</strong> ${selectedProposal.eventType}</p></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px"><p class="section-title">Serviços Contratados</p><table><thead><tr><th>Serviço</th><th style="text-align:right">Valor</th></tr></thead><tbody>${servicosHTML}<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;color:#6b7280">Subtotal</td><td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#6b7280">${formatC(selectedProposal.subtotalCents / 100)}</td></tr>${selectedProposal.descontoCombo > 0 ? `<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;color:#059669">Desconto Combo (${selectedProposal.descontoCombo * 100}%)</td><td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#059669">-${formatC((selectedProposal.subtotalCents - selectedProposal.totalCents) / 100)}</td></tr>` : ""}<tr class="total-row"><td style="padding:8px;border:1px solid #e5e7eb">Valor Final Líquido</td><td style="padding:8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#92400e">${formatC(selectedProposal.totalCents / 100)}</td></tr></tbody></table></div><div style="margin-top:32px;padding-top:12px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;font-family:sans-serif"><div style="font-size:9px;color:#9ca3af"><p>Compact Prime CRM — Documento Comercial Informativo.</p><p style="margin-top:4px">Assinado digitalmente por Compact Prime Ltda.</p></div><div style="border:2px solid rgba(5,150,105,0.35);padding:6px 12px;border-radius:4px;background:rgba(5,150,105,0.05);color:#059669;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-family:monospace">Orçamento Aprovado</div></div></body></html>`);
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Proposta – ${selectedProposal.client}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;color:#111;background:#fff;padding:40px}h1{font-size:18px;color:#92400e;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}p{margin:0}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#f9f9f9;padding:6px 8px;border:1px solid #e5e7eb;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}.total-row td{font-weight:700;font-size:13px;border-top:2px solid #92400e}.section-title{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#6b7280;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:12px;font-family:sans-serif;font-weight:700}@media print{body{padding:20px}}</style></head><body><div style="border-bottom:2px solid #b45309;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between"><div><h1>${empresa.nome_fantasia}</h1><p style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;font-family:sans-serif">${empresa.slogan}</p></div><div style="text-align:right;font-size:11px;color:#6b7280;font-family:sans-serif"><p>Data: ${selectedProposal.sendDate}</p><p style="margin-top:4px">Validade: ${selectedProposal.validity}</p><p style="font-family:monospace;font-size:10px;font-weight:700;margin-top:4px">ORC-${selectedProposal.id}${new Date().getFullYear()}</p></div></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px"><p style="font-weight:600;color:#1f2937;font-size:13px">Prezado(a) ${selectedProposal.client},</p><p style="margin-top:8px;color:#4b5563;line-height:1.6">Agradecemos a oportunidade de apresentar nosso orçamento personalizado para o seu evento. Abaixo detalhamos os serviços integrados e os respectivos valores operacionais conforme as premissas acordadas.</p></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px;background:#f9f9f9;border:1px solid #e5e7eb;border-radius:4px;padding:12px"><p class="section-title" style="margin-bottom:8px">Premissas do Evento</p><p><strong>Cliente:</strong> ${selectedProposal.client} &nbsp;&nbsp; <strong>Tipo de Evento:</strong> ${selectedProposal.eventType}</p></div><div style="margin-bottom:20px;font-family:sans-serif;font-size:11px"><p class="section-title">Serviços Contratados</p><table><thead><tr><th>Serviço</th><th style="text-align:right">Valor</th></tr></thead><tbody>${servicosHTML}<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;color:#6b7280">Subtotal</td><td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#6b7280">${formatC(selectedProposal.subtotalCents / 100)}</td></tr>${selectedProposal.descontoCombo > 0 ? `<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;color:#059669">Desconto Combo (${selectedProposal.descontoCombo * 100}%)</td><td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#059669">-${formatC((selectedProposal.subtotalCents - selectedProposal.totalCents) / 100)}</td></tr>` : ""}<tr class="total-row"><td style="padding:8px;border:1px solid #e5e7eb">Valor Final Líquido</td><td style="padding:8px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;color:#92400e">${formatC(selectedProposal.totalCents / 100)}</td></tr></tbody></table></div><div style="margin-top:32px;padding-top:12px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;font-family:sans-serif"><div style="font-size:9px;color:#9ca3af"><p>${empresa.nome_fantasia} — Documento Comercial Informativo.</p><p style="margin-top:4px">Assinado digitalmente por ${empresa.razao_social || empresa.nome_fantasia}.</p></div><div style="border:2px solid rgba(5,150,105,0.35);padding:6px 12px;border-radius:4px;background:rgba(5,150,105,0.05);color:#059669;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-family:monospace">Orçamento Aprovado</div></div></body></html>`);
     win.document.close();
     setTimeout(() => win.print(), 400);
   };
@@ -691,8 +693,8 @@ export default function PropostasPage() {
 
                 <div className="mt-12 flex justify-between items-end border-t border-neutral-100 pt-5 font-sans" style={{ fontFamily: "sans-serif" }}>
                   <div className="text-[9px] text-neutral-400">
-                    <p>Compact Prime CRM — Documento Comercial Informativo.</p>
-                    <p className="mt-0.5">Assinado digitalmente por Compact Prime Ltda.</p>
+                    <p>{empresa.nome_fantasia} — Documento Comercial Informativo.</p>
+                    <p className="mt-0.5">Assinado digitalmente por {empresa.razao_social || empresa.nome_fantasia}.</p>
                   </div>
                   <div className="flex items-center gap-1.5 border-2 border-emerald-600/35 px-3 py-1.5 rounded bg-emerald-500/5 text-emerald-600 uppercase text-[9px] font-bold tracking-wider font-mono">
                     <ShieldCheck className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
@@ -703,10 +705,7 @@ export default function PropostasPage() {
             </div>
 
             <div className="px-6 py-4 bg-[var(--bg-secondary)] flex items-center justify-between shrink-0">
-              <span className="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
-                <Info className="w-3.5 h-3.5 text-[var(--gold-300)]" />
-                O PDF inclui o detalhamento dos impostos e condições de parcelamento.
-              </span>
+              <span />
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowPdfModal(false)}
