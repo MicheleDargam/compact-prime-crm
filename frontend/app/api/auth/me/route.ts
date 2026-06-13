@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+
+function decodeJwt(token: string): { email?: string; sub?: string } | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const decoded = Buffer.from(payload, "base64url").toString("utf-8");
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: NextRequest) {
   const sessionToken = request.cookies.get("crm_session")?.value;
@@ -8,21 +18,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Não autenticado." }, { status: 401 });
   }
 
-  const supabase = createClient(
-    (process.env.URL_SUPABASE ?? process.env.SUPABASE_URL)!,
-    process.env.SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  );
+  const payload = decodeJwt(sessionToken);
 
-  const { data, error } = await supabase.auth.getUser(sessionToken);
-
-  if (error || !data.user) {
+  if (!payload?.email) {
     return NextResponse.json({ ok: false, error: "Sessão inválida." }, { status: 401 });
   }
 
   return NextResponse.json({
     ok: true,
-    email: data.user.email ?? "",
-    id: data.user.id,
+    email: payload.email,
+    id: payload.sub ?? "",
   });
 }
