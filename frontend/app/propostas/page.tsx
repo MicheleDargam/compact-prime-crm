@@ -881,7 +881,7 @@ export default function PropostasPage() {
                 {/* Contract Header */}
                 <div className="text-center border-b-2 border-neutral-800 pb-6">
                   <h2 className="text-base font-bold uppercase tracking-[0.15em] text-neutral-800 font-sans" style={{ fontFamily: "sans-serif" }}>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</h2>
-                  <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-1 font-sans" style={{ fontFamily: "sans-serif" }}>Nº CONT-{contractProposal.id}2026 · Data de Emissão: {new Date().toLocaleDateString("pt-BR")}</p>
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-1 font-sans" style={{ fontFamily: "sans-serif" }}>Nº CONT-{contractProposal.id}{new Date().getFullYear()} · Data de Emissão: {new Date().toLocaleDateString("pt-BR")}</p>
                 </div>
 
                 {/* Seção 1 — Dados da Empresa */}
