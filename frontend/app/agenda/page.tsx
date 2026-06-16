@@ -112,6 +112,25 @@ export default function AgendaPage() {
   const [newObs, setNewObs] = useState("");
   const [newSaving, setNewSaving] = useState(false);
   const [newError, setNewError] = useState("");
+  const [conflictWarning, setConflictWarning] = useState<string>("");
+
+  useEffect(() => {
+    if (!newData) { setConflictWarning(""); return; }
+    const [y, m, d] = newData.split("-").map(Number);
+    fetch(`/api/agenda?year=${y}&month=${m}`)
+      .then(r => r.json())
+      .then(json => {
+        if (!json.ok) return;
+        const events: CalendarEvent[] = json.data.events[d] ?? [];
+        if (events.length > 0) {
+          const nomes = events.map((e: CalendarEvent) => e.title).join(", ");
+          setConflictWarning(`Já existe${events.length > 1 ? "m" : ""} ${events.length} evento(s) nessa data: ${nomes}`);
+        } else {
+          setConflictWarning("");
+        }
+      })
+      .catch(() => setConflictWarning(""));
+  }, [newData]);
 
   const monthLabel = `${MONTH_NAMES[currentMonth - 1]} ${currentYear}`;
 
@@ -152,7 +171,7 @@ export default function AgendaPage() {
       const json = await res.json();
       if (!json.ok) { setNewError(json.error ?? "Erro ao salvar."); return; }
       setShowNewModal(false);
-      setNewNome(""); setNewTipo("Casamento"); setNewData(""); setNewHorario(""); setNewObs(""); setNewError("");
+      setNewNome(""); setNewTipo("Casamento"); setNewData(""); setNewHorario(""); setNewObs(""); setNewError(""); setConflictWarning("");
       // Refresh calendar
       const r = await fetch(`/api/agenda?year=${currentYear}&month=${currentMonth}`);
       const j = await r.json();
@@ -461,6 +480,12 @@ export default function AgendaPage() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Data *</label>
                 <input type="date" value={newData} onChange={e => setNewData(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold-400)]" />
+                {conflictWarning && (
+                  <p className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2 flex items-start gap-1.5">
+                    <span className="shrink-0">⚠</span>
+                    <span>{conflictWarning}. Você ainda pode salvar se os serviços forem diferentes.</span>
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
