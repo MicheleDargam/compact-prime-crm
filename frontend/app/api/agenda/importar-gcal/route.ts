@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { listCalendarEvents } from "@/lib/google-calendar";
 
-const TIPOS_VALIDOS = ["Casamento", "Infantil", "Adulto", "Corporativo"];
+const LOTE = 30;
 
 function detectarTipoEvento(titulo: string): string {
   const t = titulo.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -14,7 +14,6 @@ function detectarTipoEvento(titulo: string): string {
 }
 
 function extrairNomeCliente(titulo: string): string {
-  // Tenta extrair nome depois de " — " (padrão do CRM) ou usa o título inteiro
   const partes = titulo.split(/\s*[—–-]\s*/);
   if (partes.length >= 2) return partes[partes.length - 1].trim();
   return titulo.trim();
@@ -24,17 +23,15 @@ export async function POST() {
   try {
     const gcalEvents = await listCalendarEvents();
     if (gcalEvents.length === 0) {
-      return NextResponse.json({ ok: true, importados: 0, pulados: 0, mensagem: "Nenhum evento encontrado na agenda Google." });
+      return NextResponse.json({ ok: true, importados: 0, pulados: 0, temMais: false, mensagem: "Nenhum evento encontrado na agenda Google." });
     }
 
-    // Busca IDs do GCal já existentes no banco para evitar duplicatas
     const existentes = await prisma.eventos.findMany({
       where: { google_calendar_event_id: { not: null } },
       select: { google_calendar_event_id: true },
     });
     const idsExistentes = new Set(existentes.map(e => e.google_calendar_event_id));
 
-    // Busca categoria padrão
     const categoria = await prisma.categorias_cliente.findFirst({
       where: { deleted_at: null },
       orderBy: { prioridade: "asc" },
@@ -43,20 +40,15 @@ export async function POST() {
       return NextResponse.json({ ok: false, error: "Nenhuma categoria de cliente encontrada." }, { status: 422 });
     }
 
+    const pendentes = gcalEvents.filter(ev => !idsExistentes.has(ev.id));
+    const lote = pendentes.slice(0, LOTE);
+    const temMais = pendentes.length > LOTE;
+
     let importados = 0;
-    let pulados = 0;
 
-    for (const ev of gcalEvents) {
-      if (idsExistentes.has(ev.id)) {
-        pulados++;
-        continue;
-      }
-
+    for (const ev of lote) {
       const dataEvento = new Date(ev.date + "T00:00:00");
-      if (isNaN(dataEvento.getTime())) {
-        pulados++;
-        continue;
-      }
+      if (isNaN(dataEvento.getTime())) continue;
 
       let horario: Date | null = null;
       if (ev.dateTime) {
@@ -96,12 +88,12 @@ export async function POST() {
       importados++;
     }
 
-    return NextResponse.json({
-      ok: true,
-      importados,
-      pulados,
-      mensagem: `${importados} evento(s) importado(s) com sucesso. ${pulados > 0 ? `${pulados} já existiam e foram ignorados.` : ""}`.trim(),
-    });
+    const restantes = pendentes.length - importados;
+    const mensagem = temMais
+      ? `${importados} evento(s) importado(s). Ainda há ${restantes} para importar — clique novamente para continuar.`
+      : `${importados} evento(s) importado(s) com sucesso. Tudo importado!`;
+
+    return NextResponse.json({ ok: true, importados, temMais, mensagem });
   } catch (error) {
     console.error("[POST /api/agenda/importar-gcal]", error);
     return NextResponse.json({ ok: false, error: "Erro interno ao importar." }, { status: 500 });

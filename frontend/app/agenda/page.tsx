@@ -118,20 +118,29 @@ export default function AgendaPage() {
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const handleImport = async () => {
-    if (!confirm("Importar todos os eventos do Google Agenda para o CRM? Eventos já importados serão ignorados.")) return;
+    if (!confirm("Importar eventos do Google Agenda para o CRM? Eventos já importados serão ignorados.")) return;
     setImporting(true);
     setImportMsg(null);
+    let totalImportados = 0;
     try {
-      const res = await fetch("/api/agenda/importar-gcal", { method: "POST" });
-      const json = await res.json();
-      setImportMsg({ ok: json.ok, text: json.mensagem ?? json.error ?? "Erro desconhecido." });
-      if (json.ok) {
-        const r = await fetch(`/api/agenda?year=${currentYear}&month=${currentMonth}`);
-        const j = await r.json();
-        if (j.ok) setCalendarDays(buildCalendarDays(j.data.year, j.data.month, j.data.events));
+      let temMais = true;
+      while (temMais) {
+        const res = await fetch("/api/agenda/importar-gcal", { method: "POST" });
+        const json = await res.json();
+        if (!json.ok) {
+          setImportMsg({ ok: false, text: json.error ?? "Erro ao importar." });
+          return;
+        }
+        totalImportados += json.importados ?? 0;
+        temMais = json.temMais ?? false;
+        setImportMsg({ ok: true, text: `Importando... ${totalImportados} evento(s) até agora.` });
       }
+      setImportMsg({ ok: true, text: `${totalImportados} evento(s) importado(s) com sucesso. Tudo importado!` });
+      const r = await fetch(`/api/agenda?year=${currentYear}&month=${currentMonth}`);
+      const j = await r.json();
+      if (j.ok) setCalendarDays(buildCalendarDays(j.data.year, j.data.month, j.data.events));
     } catch {
-      setImportMsg({ ok: false, text: "Erro de conexão." });
+      setImportMsg({ ok: false, text: "Erro de conexão. Clique novamente para continuar de onde parou." });
     } finally {
       setImporting(false);
     }
