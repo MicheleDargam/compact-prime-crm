@@ -11,7 +11,8 @@ import {
   Clock,
   ClipboardList,
   Info,
-  Download
+  Download,
+  Trash2
 } from "lucide-react";
 import { 
   type ServiceType, 
@@ -116,6 +117,27 @@ export default function AgendaPage() {
   const [conflictWarning, setConflictWarning] = useState<string>("");
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDeleteEvent = async (eventoId: string, nomeCliente: string) => {
+    if (!confirm(`Arquivar o evento de "${nomeCliente}"? Ele sairá da agenda mas pode ser visto em arquivados.`)) return;
+    setDeletingId(eventoId);
+    try {
+      const res = await fetch(`/api/painel-clientes/${eventoId}?action=arquivar`, { method: "DELETE" });
+      const json = await res.json();
+      if (json.ok) {
+        const r = await fetch(`/api/agenda?year=${currentYear}&month=${currentMonth}`);
+        const j = await r.json();
+        if (j.ok) {
+          const built = buildCalendarDays(j.data.year, j.data.month, j.data.events);
+          setCalendarDays(built);
+          const updated = built.find(d => d.date === selectedDay?.date && d.isCurrentMonth) ?? null;
+          setSelectedDay(updated);
+        }
+      }
+    } catch { /* silencioso */ }
+    finally { setDeletingId(null); }
+  };
 
   const handleImport = async () => {
     if (!confirm("Importar eventos do Google Agenda para o CRM? Eventos já importados serão ignorados.")) return;
@@ -424,7 +446,7 @@ export default function AgendaPage() {
 
                     {/* Event name & Time */}
                     <div className="flex justify-between items-start gap-2">
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-[var(--text-primary)] text-sm flex items-center gap-1.5">
                           {event.title}
                           {eventCombo && (
@@ -437,9 +459,19 @@ export default function AgendaPage() {
                           {eventTypeLabels[event.type]}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-[var(--text-primary)] font-mono text-xs font-bold shrink-0">
-                        <Clock className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-                        <span>{event.time}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1 text-[var(--text-primary)] font-mono text-xs font-bold">
+                          <Clock className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                          <span>{event.time}</span>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteEvent(event.id, event.title)}
+                          disabled={deletingId === event.id}
+                          title="Arquivar evento"
+                          className="p-1 rounded text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-40"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
