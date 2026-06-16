@@ -10,7 +10,7 @@ function detectarTipoEvento(titulo: string): string {
   if (t.includes("infantil") || t.includes("crianca") || t.includes("criança") || t.includes("kids")) return "Infantil";
   if (t.includes("corporativo") || t.includes("empresa") || t.includes("corporate")) return "Corporativo";
   if (t.includes("adulto") || t.includes("aniversario") || t.includes("aniversário")) return "Adulto";
-  return "Casamento";
+  return "Adulto";
 }
 
 function extrairNomeCliente(titulo: string): string {
