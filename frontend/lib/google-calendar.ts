@@ -101,3 +101,39 @@ export async function deleteCalendarEvent(gcalEventId: string): Promise<void> {
     console.error("[google-calendar] deleteCalendarEvent:", err);
   }
 }
+
+export interface GCalEvent {
+  id: string;
+  summary: string;
+  description?: string | null;
+  date: string;
+  dateTime?: string | null;
+}
+
+export async function listCalendarEvents(timeMin?: string, timeMax?: string): Promise<GCalEvent[]> {
+  if (!isConfigured()) return [];
+  try {
+    const calendar = google.calendar({ version: "v3", auth: getAuth() });
+    const res = await calendar.events.list({
+      calendarId: CALENDAR_ID,
+      timeMin: timeMin ?? new Date(2020, 0, 1).toISOString(),
+      timeMax: timeMax ?? new Date(2030, 11, 31).toISOString(),
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: 2500,
+    });
+
+    return (res.data.items ?? [])
+      .filter(e => e.id && e.summary && (e.start?.date || e.start?.dateTime))
+      .map(e => ({
+        id: e.id!,
+        summary: e.summary!,
+        description: e.description ?? null,
+        date: (e.start?.date ?? e.start?.dateTime?.split("T")[0])!,
+        dateTime: e.start?.dateTime ?? null,
+      }));
+  } catch (err) {
+    console.error("[google-calendar] listCalendarEvents:", err);
+    return [];
+  }
+}

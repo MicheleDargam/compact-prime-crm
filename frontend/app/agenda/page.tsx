@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
   Calendar,
   Sparkles,
   Users,
   Clock,
   ClipboardList,
-  Info
+  Info,
+  Download
 } from "lucide-react";
 import { 
   type ServiceType, 
@@ -113,6 +114,28 @@ export default function AgendaPage() {
   const [newSaving, setNewSaving] = useState(false);
   const [newError, setNewError] = useState("");
   const [conflictWarning, setConflictWarning] = useState<string>("");
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const handleImport = async () => {
+    if (!confirm("Importar todos os eventos do Google Agenda para o CRM? Eventos já importados serão ignorados.")) return;
+    setImporting(true);
+    setImportMsg(null);
+    try {
+      const res = await fetch("/api/agenda/importar-gcal", { method: "POST" });
+      const json = await res.json();
+      setImportMsg({ ok: json.ok, text: json.mensagem ?? json.error ?? "Erro desconhecido." });
+      if (json.ok) {
+        const r = await fetch(`/api/agenda?year=${currentYear}&month=${currentMonth}`);
+        const j = await r.json();
+        if (j.ok) setCalendarDays(buildCalendarDays(j.data.year, j.data.month, j.data.events));
+      }
+    } catch {
+      setImportMsg({ ok: false, text: "Erro de conexão." });
+    } finally {
+      setImporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!newData) { setConflictWarning(""); return; }
@@ -219,18 +242,38 @@ export default function AgendaPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 bg-[var(--bg-card)] p-1.5 rounded-lg border border-[var(--border-default)] shadow-card">
-          <button onClick={handlePrevMonth} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] rounded-md transition-colors cursor-pointer">
-            <ChevronLeft className="w-5 h-5" />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleImport}
+            disabled={importing}
+            title="Importar eventos do Google Agenda"
+            className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--gold-500)]/30 transition-all disabled:opacity-60 cursor-pointer shadow-card"
+          >
+            <Download className="w-4 h-4 text-[var(--gold-400)]" />
+            {importing ? "Importando..." : "Importar do Google"}
           </button>
-          <span className="font-semibold text-[var(--text-primary)] min-w-[120px] text-center font-sans">
-            {monthLabel}
-          </span>
-          <button onClick={handleNextMonth} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] rounded-md transition-colors cursor-pointer">
-            <ChevronRight className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-4 bg-[var(--bg-card)] p-1.5 rounded-lg border border-[var(--border-default)] shadow-card">
+            <button onClick={handlePrevMonth} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] rounded-md transition-colors cursor-pointer">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <span className="font-semibold text-[var(--text-primary)] min-w-[120px] text-center font-sans">
+              {monthLabel}
+            </span>
+            <button onClick={handleNextMonth} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] rounded-md transition-colors cursor-pointer">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </header>
+
+      {importMsg && (
+        <div className={`mb-4 px-4 py-3 rounded-xl border text-xs font-semibold flex items-center gap-2 shrink-0 ${importMsg.ok ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400"}`}>
+          <span>{importMsg.ok ? "✓" : "✕"}</span>
+          <span>{importMsg.text}</span>
+          <button onClick={() => setImportMsg(null)} className="ml-auto text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">×</button>
+        </div>
+      )}
 
       {/* Service Legenda / Filtros Horizontais */}
       <div className="flex flex-col md:flex-row md:items-center gap-2 mb-6 bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border-default)] shadow-card overflow-x-auto no-scrollbar shrink-0">
