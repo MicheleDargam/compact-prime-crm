@@ -123,8 +123,28 @@ export type recibos = Prisma.recibosModel
  */
 export type regras_comerciais = Prisma.regras_comerciaisModel
 /**
- * Model servicos
+ * Model configuracoes_empresa
  * This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
  * This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+ */
+export type configuracoes_empresa = Prisma.configuracoes_empresaModel
+/**
+ * Model reserva_buffet
+ * 
+ */
+export type reserva_buffet = Prisma.reserva_buffetModel
+/**
+ * Model socias
+ * 
+ */
+export type socias = Prisma.sociasModel
+/**
+ * Model retiradas_socias
+ * 
+ */
+export type retiradas_socias = Prisma.retiradas_sociasModel
+/**
+ * Model servicos
+ * 
  */
 export type servicos = Prisma.servicosModel

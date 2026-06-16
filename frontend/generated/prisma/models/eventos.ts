@@ -46,6 +46,7 @@ export type EventosMinAggregateOutputType = {
   quantidade_convidados: number | null
   status: string | null
   observacoes: string | null
+  google_calendar_event_id: string | null
   created_at: Date | null
   updated_at: Date | null
   deleted_at: Date | null
@@ -62,6 +63,7 @@ export type EventosMaxAggregateOutputType = {
   quantidade_convidados: number | null
   status: string | null
   observacoes: string | null
+  google_calendar_event_id: string | null
   created_at: Date | null
   updated_at: Date | null
   deleted_at: Date | null
@@ -78,6 +80,7 @@ export type EventosCountAggregateOutputType = {
   quantidade_convidados: number
   status: number
   observacoes: number
+  google_calendar_event_id: number
   created_at: number
   updated_at: number
   deleted_at: number
@@ -104,6 +107,7 @@ export type EventosMinAggregateInputType = {
   quantidade_convidados?: true
   status?: true
   observacoes?: true
+  google_calendar_event_id?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -120,6 +124,7 @@ export type EventosMaxAggregateInputType = {
   quantidade_convidados?: true
   status?: true
   observacoes?: true
+  google_calendar_event_id?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -136,6 +141,7 @@ export type EventosCountAggregateInputType = {
   quantidade_convidados?: true
   status?: true
   observacoes?: true
+  google_calendar_event_id?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -239,6 +245,7 @@ export type EventosGroupByOutputType = {
   quantidade_convidados: number | null
   status: string
   observacoes: string | null
+  google_calendar_event_id: string | null
   created_at: Date
   updated_at: Date
   deleted_at: Date | null
@@ -278,6 +285,7 @@ export type eventosWhereInput = {
   quantidade_convidados?: Prisma.IntNullableFilter<"eventos"> | number | null
   status?: Prisma.StringFilter<"eventos"> | string
   observacoes?: Prisma.StringNullableFilter<"eventos"> | string | null
+  google_calendar_event_id?: Prisma.StringNullableFilter<"eventos"> | string | null
   created_at?: Prisma.DateTimeFilter<"eventos"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"eventos"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"eventos"> | Date | string | null
@@ -302,6 +310,7 @@ export type eventosOrderByWithRelationInput = {
   quantidade_convidados?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   observacoes?: Prisma.SortOrderInput | Prisma.SortOrder
+  google_calendar_event_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -329,6 +338,7 @@ export type eventosWhereUniqueInput = Prisma.AtLeast<{
   quantidade_convidados?: Prisma.IntNullableFilter<"eventos"> | number | null
   status?: Prisma.StringFilter<"eventos"> | string
   observacoes?: Prisma.StringNullableFilter<"eventos"> | string | null
+  google_calendar_event_id?: Prisma.StringNullableFilter<"eventos"> | string | null
   created_at?: Prisma.DateTimeFilter<"eventos"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"eventos"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"eventos"> | Date | string | null
@@ -353,6 +363,7 @@ export type eventosOrderByWithAggregationInput = {
   quantidade_convidados?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   observacoes?: Prisma.SortOrderInput | Prisma.SortOrder
+  google_calendar_event_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -377,6 +388,7 @@ export type eventosScalarWhereWithAggregatesInput = {
   quantidade_convidados?: Prisma.IntNullableWithAggregatesFilter<"eventos"> | number | null
   status?: Prisma.StringWithAggregatesFilter<"eventos"> | string
   observacoes?: Prisma.StringNullableWithAggregatesFilter<"eventos"> | string | null
+  google_calendar_event_id?: Prisma.StringNullableWithAggregatesFilter<"eventos"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"eventos"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"eventos"> | Date | string
   deleted_at?: Prisma.DateTimeNullableWithAggregatesFilter<"eventos"> | Date | string | null
@@ -392,6 +404,7 @@ export type eventosCreateInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -416,6 +429,7 @@ export type eventosUncheckedCreateInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -438,6 +452,7 @@ export type eventosUpdateInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -462,6 +477,7 @@ export type eventosUncheckedUpdateInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -485,6 +501,7 @@ export type eventosCreateManyInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -500,6 +517,7 @@ export type eventosUpdateManyMutationInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -516,6 +534,7 @@ export type eventosUncheckedUpdateManyInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -552,6 +571,7 @@ export type eventosCountOrderByAggregateInput = {
   quantidade_convidados?: Prisma.SortOrder
   status?: Prisma.SortOrder
   observacoes?: Prisma.SortOrder
+  google_calendar_event_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -572,6 +592,7 @@ export type eventosMaxOrderByAggregateInput = {
   quantidade_convidados?: Prisma.SortOrder
   status?: Prisma.SortOrder
   observacoes?: Prisma.SortOrder
+  google_calendar_event_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -588,6 +609,7 @@ export type eventosMinOrderByAggregateInput = {
   quantidade_convidados?: Prisma.SortOrder
   status?: Prisma.SortOrder
   observacoes?: Prisma.SortOrder
+  google_calendar_event_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -757,6 +779,7 @@ export type eventosCreateWithoutClientesInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -779,6 +802,7 @@ export type eventosUncheckedCreateWithoutClientesInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -831,6 +855,7 @@ export type eventosScalarWhereInput = {
   quantidade_convidados?: Prisma.IntNullableFilter<"eventos"> | number | null
   status?: Prisma.StringFilter<"eventos"> | string
   observacoes?: Prisma.StringNullableFilter<"eventos"> | string | null
+  google_calendar_event_id?: Prisma.StringNullableFilter<"eventos"> | string | null
   created_at?: Prisma.DateTimeFilter<"eventos"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"eventos"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"eventos"> | Date | string | null
@@ -846,6 +871,7 @@ export type eventosCreateWithoutContratosInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -869,6 +895,7 @@ export type eventosUncheckedCreateWithoutContratosInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -906,6 +933,7 @@ export type eventosUpdateWithoutContratosInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -929,6 +957,7 @@ export type eventosUncheckedUpdateWithoutContratosInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -950,6 +979,7 @@ export type eventosCreateWithoutDespesas_buffetInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -973,6 +1003,7 @@ export type eventosUncheckedCreateWithoutDespesas_buffetInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1010,6 +1041,7 @@ export type eventosUpdateWithoutDespesas_buffetInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1033,6 +1065,7 @@ export type eventosUncheckedUpdateWithoutDespesas_buffetInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1054,6 +1087,7 @@ export type eventosCreateWithoutEvento_funcionariosInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1077,6 +1111,7 @@ export type eventosUncheckedCreateWithoutEvento_funcionariosInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1114,6 +1149,7 @@ export type eventosUpdateWithoutEvento_funcionariosInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1137,6 +1173,7 @@ export type eventosUncheckedUpdateWithoutEvento_funcionariosInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1158,6 +1195,7 @@ export type eventosCreateWithoutEvento_servicosInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1181,6 +1219,7 @@ export type eventosUncheckedCreateWithoutEvento_servicosInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1218,6 +1257,7 @@ export type eventosUpdateWithoutEvento_servicosInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1241,6 +1281,7 @@ export type eventosUncheckedUpdateWithoutEvento_servicosInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1262,6 +1303,7 @@ export type eventosCreateWithoutEvento_status_historicoInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1285,6 +1327,7 @@ export type eventosUncheckedCreateWithoutEvento_status_historicoInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1322,6 +1365,7 @@ export type eventosUpdateWithoutEvento_status_historicoInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1345,6 +1389,7 @@ export type eventosUncheckedUpdateWithoutEvento_status_historicoInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1366,6 +1411,7 @@ export type eventosCreateWithoutPagamentosInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1389,6 +1435,7 @@ export type eventosUncheckedCreateWithoutPagamentosInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1426,6 +1473,7 @@ export type eventosUpdateWithoutPagamentosInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1449,6 +1497,7 @@ export type eventosUncheckedUpdateWithoutPagamentosInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1470,6 +1519,7 @@ export type eventosCreateWithoutPropostasInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1493,6 +1543,7 @@ export type eventosUncheckedCreateWithoutPropostasInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1530,6 +1581,7 @@ export type eventosUpdateWithoutPropostasInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1553,6 +1605,7 @@ export type eventosUncheckedUpdateWithoutPropostasInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1574,6 +1627,7 @@ export type eventosCreateManyClientesInput = {
   quantidade_convidados?: number | null
   status?: string
   observacoes?: string | null
+  google_calendar_event_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -1589,6 +1643,7 @@ export type eventosUpdateWithoutClientesInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1611,6 +1666,7 @@ export type eventosUncheckedUpdateWithoutClientesInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1633,6 +1689,7 @@ export type eventosUncheckedUpdateManyWithoutClientesInput = {
   quantidade_convidados?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   observacoes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1734,6 +1791,7 @@ export type eventosSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   quantidade_convidados?: boolean
   status?: boolean
   observacoes?: boolean
+  google_calendar_event_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -1759,6 +1817,7 @@ export type eventosSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   quantidade_convidados?: boolean
   status?: boolean
   observacoes?: boolean
+  google_calendar_event_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -1776,6 +1835,7 @@ export type eventosSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   quantidade_convidados?: boolean
   status?: boolean
   observacoes?: boolean
+  google_calendar_event_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -1793,12 +1853,13 @@ export type eventosSelectScalar = {
   quantidade_convidados?: boolean
   status?: boolean
   observacoes?: boolean
+  google_calendar_event_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
 }
 
-export type eventosOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "cliente_id" | "tipo_evento" | "nome_evento" | "data_evento" | "horario" | "local_evento" | "quantidade_convidados" | "status" | "observacoes" | "created_at" | "updated_at" | "deleted_at", ExtArgs["result"]["eventos"]>
+export type eventosOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "cliente_id" | "tipo_evento" | "nome_evento" | "data_evento" | "horario" | "local_evento" | "quantidade_convidados" | "status" | "observacoes" | "google_calendar_event_id" | "created_at" | "updated_at" | "deleted_at", ExtArgs["result"]["eventos"]>
 export type eventosInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   contratos?: boolean | Prisma.eventos$contratosArgs<ExtArgs>
   despesas_buffet?: boolean | Prisma.eventos$despesas_buffetArgs<ExtArgs>
@@ -1840,6 +1901,7 @@ export type $eventosPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     quantidade_convidados: number | null
     status: string
     observacoes: string | null
+    google_calendar_event_id: string | null
     created_at: Date
     updated_at: Date
     deleted_at: Date | null
@@ -2284,6 +2346,7 @@ export interface eventosFieldRefs {
   readonly quantidade_convidados: Prisma.FieldRef<"eventos", 'Int'>
   readonly status: Prisma.FieldRef<"eventos", 'String'>
   readonly observacoes: Prisma.FieldRef<"eventos", 'String'>
+  readonly google_calendar_event_id: Prisma.FieldRef<"eventos", 'String'>
   readonly created_at: Prisma.FieldRef<"eventos", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"eventos", 'DateTime'>
   readonly deleted_at: Prisma.FieldRef<"eventos", 'DateTime'>

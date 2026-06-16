@@ -211,6 +211,7 @@ model eventos {
   quantidade_convidados   Int?
   status                  String                    @default("lead") @db.VarChar(50)
   observacoes             String?
+  google_calendar_event_id String?                 @db.VarChar(255)
   created_at              DateTime                  @default(now()) @db.Timestamptz(6)
   updated_at              DateTime                  @default(now()) @db.Timestamptz(6)
   deleted_at              DateTime?                 @db.Timestamptz(6)

@@ -402,6 +402,10 @@ export const ModelName = {
   propostas: 'propostas',
   recibos: 'recibos',
   regras_comerciais: 'regras_comerciais',
+  configuracoes_empresa: 'configuracoes_empresa',
+  reserva_buffet: 'reserva_buffet',
+  socias: 'socias',
+  retiradas_socias: 'retiradas_socias',
   servicos: 'servicos'
 } as const
 
@@ -418,7 +422,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "categorias_cliente" | "cliente_telefones" | "clientes" | "combo_servicos" | "combos" | "contratos" | "despesas_buffet" | "evento_funcionarios" | "evento_servicos" | "evento_status_historico" | "eventos" | "funcionarios" | "pagamentos" | "parcelas" | "proposta_servicos" | "propostas" | "recibos" | "regras_comerciais" | "servicos"
+    modelProps: "categorias_cliente" | "cliente_telefones" | "clientes" | "combo_servicos" | "combos" | "contratos" | "despesas_buffet" | "evento_funcionarios" | "evento_servicos" | "evento_status_historico" | "eventos" | "funcionarios" | "pagamentos" | "parcelas" | "proposta_servicos" | "propostas" | "recibos" | "regras_comerciais" | "configuracoes_empresa" | "reserva_buffet" | "socias" | "retiradas_socias" | "servicos"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1754,6 +1758,302 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    configuracoes_empresa: {
+      payload: Prisma.$configuracoes_empresaPayload<ExtArgs>
+      fields: Prisma.configuracoes_empresaFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.configuracoes_empresaFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.configuracoes_empresaFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload>
+        }
+        findFirst: {
+          args: Prisma.configuracoes_empresaFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.configuracoes_empresaFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload>
+        }
+        findMany: {
+          args: Prisma.configuracoes_empresaFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload>[]
+        }
+        create: {
+          args: Prisma.configuracoes_empresaCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload>
+        }
+        createMany: {
+          args: Prisma.configuracoes_empresaCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.configuracoes_empresaCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload>[]
+        }
+        delete: {
+          args: Prisma.configuracoes_empresaDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload>
+        }
+        update: {
+          args: Prisma.configuracoes_empresaUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload>
+        }
+        deleteMany: {
+          args: Prisma.configuracoes_empresaDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.configuracoes_empresaUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.configuracoes_empresaUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload>[]
+        }
+        upsert: {
+          args: Prisma.configuracoes_empresaUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$configuracoes_empresaPayload>
+        }
+        aggregate: {
+          args: Prisma.Configuracoes_empresaAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateConfiguracoes_empresa>
+        }
+        groupBy: {
+          args: Prisma.configuracoes_empresaGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Configuracoes_empresaGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.configuracoes_empresaCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Configuracoes_empresaCountAggregateOutputType> | number
+        }
+      }
+    }
+    reserva_buffet: {
+      payload: Prisma.$reserva_buffetPayload<ExtArgs>
+      fields: Prisma.reserva_buffetFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.reserva_buffetFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.reserva_buffetFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload>
+        }
+        findFirst: {
+          args: Prisma.reserva_buffetFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.reserva_buffetFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload>
+        }
+        findMany: {
+          args: Prisma.reserva_buffetFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload>[]
+        }
+        create: {
+          args: Prisma.reserva_buffetCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload>
+        }
+        createMany: {
+          args: Prisma.reserva_buffetCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.reserva_buffetCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload>[]
+        }
+        delete: {
+          args: Prisma.reserva_buffetDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload>
+        }
+        update: {
+          args: Prisma.reserva_buffetUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload>
+        }
+        deleteMany: {
+          args: Prisma.reserva_buffetDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.reserva_buffetUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.reserva_buffetUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload>[]
+        }
+        upsert: {
+          args: Prisma.reserva_buffetUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$reserva_buffetPayload>
+        }
+        aggregate: {
+          args: Prisma.Reserva_buffetAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateReserva_buffet>
+        }
+        groupBy: {
+          args: Prisma.reserva_buffetGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Reserva_buffetGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.reserva_buffetCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Reserva_buffetCountAggregateOutputType> | number
+        }
+      }
+    }
+    socias: {
+      payload: Prisma.$sociasPayload<ExtArgs>
+      fields: Prisma.sociasFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.sociasFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.sociasFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload>
+        }
+        findFirst: {
+          args: Prisma.sociasFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.sociasFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload>
+        }
+        findMany: {
+          args: Prisma.sociasFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload>[]
+        }
+        create: {
+          args: Prisma.sociasCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload>
+        }
+        createMany: {
+          args: Prisma.sociasCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.sociasCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload>[]
+        }
+        delete: {
+          args: Prisma.sociasDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload>
+        }
+        update: {
+          args: Prisma.sociasUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload>
+        }
+        deleteMany: {
+          args: Prisma.sociasDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.sociasUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.sociasUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload>[]
+        }
+        upsert: {
+          args: Prisma.sociasUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sociasPayload>
+        }
+        aggregate: {
+          args: Prisma.SociasAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSocias>
+        }
+        groupBy: {
+          args: Prisma.sociasGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SociasGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.sociasCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SociasCountAggregateOutputType> | number
+        }
+      }
+    }
+    retiradas_socias: {
+      payload: Prisma.$retiradas_sociasPayload<ExtArgs>
+      fields: Prisma.retiradas_sociasFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.retiradas_sociasFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.retiradas_sociasFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload>
+        }
+        findFirst: {
+          args: Prisma.retiradas_sociasFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.retiradas_sociasFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload>
+        }
+        findMany: {
+          args: Prisma.retiradas_sociasFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload>[]
+        }
+        create: {
+          args: Prisma.retiradas_sociasCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload>
+        }
+        createMany: {
+          args: Prisma.retiradas_sociasCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.retiradas_sociasCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload>[]
+        }
+        delete: {
+          args: Prisma.retiradas_sociasDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload>
+        }
+        update: {
+          args: Prisma.retiradas_sociasUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload>
+        }
+        deleteMany: {
+          args: Prisma.retiradas_sociasDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.retiradas_sociasUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.retiradas_sociasUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload>[]
+        }
+        upsert: {
+          args: Prisma.retiradas_sociasUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$retiradas_sociasPayload>
+        }
+        aggregate: {
+          args: Prisma.Retiradas_sociasAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRetiradas_socias>
+        }
+        groupBy: {
+          args: Prisma.retiradas_sociasGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Retiradas_sociasGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.retiradas_sociasCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Retiradas_sociasCountAggregateOutputType> | number
+        }
+      }
+    }
     servicos: {
       payload: Prisma.$servicosPayload<ExtArgs>
       fields: Prisma.servicosFieldRefs
@@ -2021,6 +2321,7 @@ export const EventosScalarFieldEnum = {
   quantidade_convidados: 'quantidade_convidados',
   status: 'status',
   observacoes: 'observacoes',
+  google_calendar_event_id: 'google_calendar_event_id',
   created_at: 'created_at',
   updated_at: 'updated_at',
   deleted_at: 'deleted_at'
@@ -2147,6 +2448,69 @@ export const Regras_comerciaisScalarFieldEnum = {
 } as const
 
 export type Regras_comerciaisScalarFieldEnum = (typeof Regras_comerciaisScalarFieldEnum)[keyof typeof Regras_comerciaisScalarFieldEnum]
+
+
+export const Configuracoes_empresaScalarFieldEnum = {
+  id: 'id',
+  nome_fantasia: 'nome_fantasia',
+  razao_social: 'razao_social',
+  cnpj: 'cnpj',
+  endereco: 'endereco',
+  telefone: 'telefone',
+  email: 'email',
+  responsavel_legal: 'responsavel_legal',
+  cargo_responsavel: 'cargo_responsavel',
+  assinatura_texto: 'assinatura_texto',
+  slogan: 'slogan',
+  updated_at: 'updated_at',
+  logo_url: 'logo_url',
+  observacoes_financeiras: 'observacoes_financeiras',
+  parcelamento_padrao: 'parcelamento_padrao',
+  sinal_minimo: 'sinal_minimo',
+  validade_proposta: 'validade_proposta'
+} as const
+
+export type Configuracoes_empresaScalarFieldEnum = (typeof Configuracoes_empresaScalarFieldEnum)[keyof typeof Configuracoes_empresaScalarFieldEnum]
+
+
+export const Reserva_buffetScalarFieldEnum = {
+  id: 'id',
+  objetivo: 'objetivo',
+  meta: 'meta',
+  acumulado: 'acumulado',
+  percentual_reserva: 'percentual_reserva',
+  updated_at: 'updated_at'
+} as const
+
+export type Reserva_buffetScalarFieldEnum = (typeof Reserva_buffetScalarFieldEnum)[keyof typeof Reserva_buffetScalarFieldEnum]
+
+
+export const SociasScalarFieldEnum = {
+  id: 'id',
+  nome: 'nome',
+  cargo: 'cargo',
+  email: 'email',
+  telefone: 'telefone',
+  percentual: 'percentual',
+  ordem: 'ordem',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type SociasScalarFieldEnum = (typeof SociasScalarFieldEnum)[keyof typeof SociasScalarFieldEnum]
+
+
+export const Retiradas_sociasScalarFieldEnum = {
+  id: 'id',
+  socia_id: 'socia_id',
+  mes_ano: 'mes_ano',
+  valor_retirado: 'valor_retirado',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Retiradas_sociasScalarFieldEnum = (typeof Retiradas_sociasScalarFieldEnum)[keyof typeof Retiradas_sociasScalarFieldEnum]
 
 
 export const ServicosScalarFieldEnum = {
@@ -2396,6 +2760,10 @@ export type GlobalOmitConfig = {
   propostas?: Prisma.propostasOmit
   recibos?: Prisma.recibosOmit
   regras_comerciais?: Prisma.regras_comerciaisOmit
+  configuracoes_empresa?: Prisma.configuracoes_empresaOmit
+  reserva_buffet?: Prisma.reserva_buffetOmit
+  socias?: Prisma.sociasOmit
+  retiradas_socias?: Prisma.retiradas_sociasOmit
   servicos?: Prisma.servicosOmit
 }
 

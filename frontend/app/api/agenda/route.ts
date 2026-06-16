@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createCalendarEvent } from "@/lib/google-calendar";
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,10 +62,24 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return { clienteId: cliente.id, eventoId: evento.id };
+      return { clienteId: cliente.id, eventoId: evento.id, dataEvento: dataEvtParsed, horario: horarioParsed };
     });
 
-    return NextResponse.json({ ok: true, data: result }, { status: 201 });
+    const gcalTitle = `${tipoEvento.trim()} — ${nomeCliente.trim()}`;
+    const gcalId = await createCalendarEvent({
+      title: gcalTitle,
+      description: observacoes?.trim() || undefined,
+      dataEvento: result.dataEvento,
+      horario: result.horario,
+    });
+    if (gcalId) {
+      await prisma.eventos.update({
+        where: { id: result.eventoId },
+        data: { google_calendar_event_id: gcalId },
+      });
+    }
+
+    return NextResponse.json({ ok: true, data: { clienteId: result.clienteId, eventoId: result.eventoId } }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/agenda]", error);
     return NextResponse.json({ ok: false, error: "Erro interno." }, { status: 500 });

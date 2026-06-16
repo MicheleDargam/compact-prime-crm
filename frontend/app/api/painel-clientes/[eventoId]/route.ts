@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserEmail } from "@/lib/auth";
+import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "@/lib/google-calendar";
 
 const VALID_STATUSES = ["lead", "proposta", "negociacao", "fechado", "cancelado"];
 const VALID_EVENT_TYPES = ["Casamento", "Infantil", "Adulto", "Corporativo"];
@@ -115,7 +116,10 @@ export async function PATCH(
 
   try {
     const [eventoAtual, userEmail] = await Promise.all([
-      prisma.eventos.findFirst({ where: { id: eventoId }, select: { status: true } }),
+      prisma.eventos.findFirst({
+        where: { id: eventoId },
+        include: { clientes: { select: { nome: true } } },
+      }),
       getUserEmail(request),
     ]);
 
@@ -133,6 +137,30 @@ export async function PATCH(
         },
       });
     });
+
+    // Sincronizar com Google Calendar quando evento é confirmado (fechado)
+    if (status === "fechado" && eventoAtual?.data_evento) {
+      const gcalTitle = `${eventoAtual.tipo_evento} — ${eventoAtual.clientes.nome}`;
+      if (eventoAtual.google_calendar_event_id) {
+        await updateCalendarEvent(eventoAtual.google_calendar_event_id, {
+          title: gcalTitle,
+          dataEvento: eventoAtual.data_evento,
+          horario: eventoAtual.horario ?? null,
+        });
+      } else {
+        const gcalId = await createCalendarEvent({
+          title: gcalTitle,
+          dataEvento: eventoAtual.data_evento,
+          horario: eventoAtual.horario ?? null,
+        });
+        if (gcalId) {
+          await prisma.eventos.update({
+            where: { id: eventoId },
+            data: { google_calendar_event_id: gcalId },
+          });
+        }
+      }
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
@@ -282,6 +310,16 @@ export async function PUT(
       }
     });
 
+    // Atualiza no Google Calendar se o evento já está sincronizado
+    if (evento.google_calendar_event_id && dataEvtSafe) {
+      await updateCalendarEvent(evento.google_calendar_event_id, {
+        title: `${tipoEvtSafe} — ${(nome as string).trim()}`,
+        description: typeof observacoes === "string" ? observacoes.trim() || undefined : undefined,
+        dataEvento: dataEvtSafe,
+        horario: evento.horario ?? null,
+      });
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2002") {
@@ -360,6 +398,11 @@ export async function DELETE(
         });
       });
     }
+
+    if (evento.google_calendar_event_id) {
+      await deleteCalendarEvent(evento.google_calendar_event_id);
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {

@@ -69,6 +69,10 @@ export const ModelName = {
   propostas: 'propostas',
   recibos: 'recibos',
   regras_comerciais: 'regras_comerciais',
+  configuracoes_empresa: 'configuracoes_empresa',
+  reserva_buffet: 'reserva_buffet',
+  socias: 'socias',
+  retiradas_socias: 'retiradas_socias',
   servicos: 'servicos'
 } as const
 
@@ -242,6 +246,7 @@ export const EventosScalarFieldEnum = {
   quantidade_convidados: 'quantidade_convidados',
   status: 'status',
   observacoes: 'observacoes',
+  google_calendar_event_id: 'google_calendar_event_id',
   created_at: 'created_at',
   updated_at: 'updated_at',
   deleted_at: 'deleted_at'
@@ -368,6 +373,69 @@ export const Regras_comerciaisScalarFieldEnum = {
 } as const
 
 export type Regras_comerciaisScalarFieldEnum = (typeof Regras_comerciaisScalarFieldEnum)[keyof typeof Regras_comerciaisScalarFieldEnum]
+
+
+export const Configuracoes_empresaScalarFieldEnum = {
+  id: 'id',
+  nome_fantasia: 'nome_fantasia',
+  razao_social: 'razao_social',
+  cnpj: 'cnpj',
+  endereco: 'endereco',
+  telefone: 'telefone',
+  email: 'email',
+  responsavel_legal: 'responsavel_legal',
+  cargo_responsavel: 'cargo_responsavel',
+  assinatura_texto: 'assinatura_texto',
+  slogan: 'slogan',
+  updated_at: 'updated_at',
+  logo_url: 'logo_url',
+  observacoes_financeiras: 'observacoes_financeiras',
+  parcelamento_padrao: 'parcelamento_padrao',
+  sinal_minimo: 'sinal_minimo',
+  validade_proposta: 'validade_proposta'
+} as const
+
+export type Configuracoes_empresaScalarFieldEnum = (typeof Configuracoes_empresaScalarFieldEnum)[keyof typeof Configuracoes_empresaScalarFieldEnum]
+
+
+export const Reserva_buffetScalarFieldEnum = {
+  id: 'id',
+  objetivo: 'objetivo',
+  meta: 'meta',
+  acumulado: 'acumulado',
+  percentual_reserva: 'percentual_reserva',
+  updated_at: 'updated_at'
+} as const
+
+export type Reserva_buffetScalarFieldEnum = (typeof Reserva_buffetScalarFieldEnum)[keyof typeof Reserva_buffetScalarFieldEnum]
+
+
+export const SociasScalarFieldEnum = {
+  id: 'id',
+  nome: 'nome',
+  cargo: 'cargo',
+  email: 'email',
+  telefone: 'telefone',
+  percentual: 'percentual',
+  ordem: 'ordem',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type SociasScalarFieldEnum = (typeof SociasScalarFieldEnum)[keyof typeof SociasScalarFieldEnum]
+
+
+export const Retiradas_sociasScalarFieldEnum = {
+  id: 'id',
+  socia_id: 'socia_id',
+  mes_ano: 'mes_ano',
+  valor_retirado: 'valor_retirado',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Retiradas_sociasScalarFieldEnum = (typeof Retiradas_sociasScalarFieldEnum)[keyof typeof Retiradas_sociasScalarFieldEnum]
 
 
 export const ServicosScalarFieldEnum = {
